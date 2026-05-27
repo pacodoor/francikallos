@@ -3,11 +3,1507 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Francisco Pinto-PT -Calisthenics— Gestão de Treinos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+
+<style><!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CaliPT — Gestão de Treinos</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
 
 <style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f0f;--surface:#181818;--s2:#222;--s3:#2c2c2c;--s4:#363636;
+  --accent:#c8f54a;--accent2:#4af5a0;--danger:#f54a4a;
+  --text:#f0f0f0;--muted:#777;--muted2:#555;--border:rgba(255,255,255,0.07);
+  --r:12px;--fh:'Syne',sans-serif;--fb:'DM Sans',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--fb);min-height:100vh;font-size:14px}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;font-family:var(--fb)}
+input,select,textarea{font-family:var(--fb)}
+
+/* ── LAYOUT ── */
+.app{display:flex;flex-direction:column;min-height:100vh}
+.topnav{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 24px;background:var(--surface);border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:100;gap:12px;
+}
+.logo{font-family:var(--fh);font-size:20px;font-weight:800;letter-spacing:-0.5px;white-space:nowrap}
+.logo span{color:var(--accent)}
+.nav-tabs{display:flex;gap:3px;flex-wrap:wrap}
+.nav-tab{
+  padding:7px 15px;border-radius:8px;font-size:13px;font-weight:500;
+  border:none;background:transparent;color:var(--muted);transition:all 0.2s;
+}
+.nav-tab.active{background:var(--accent);color:#0f0f0f;font-weight:700}
+.nav-tab:hover:not(.active){background:var(--s2);color:var(--text)}
+
+/* ── PAGES ── */
+.page{display:none;padding:24px;max-width:920px;margin:0 auto;width:100%;animation:fadeIn 0.25s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ── COMPONENTS ── */
+.btn{padding:9px 18px;border-radius:9px;font-size:13px;font-weight:600;border:none;transition:all 0.15s;display:inline-flex;align-items:center;gap:6px}
+.btn-accent{background:var(--accent);color:#0f0f0f}
+.btn-accent:hover{background:#d4ff5a;transform:translateY(-1px)}
+.btn-ghost{background:var(--s2);color:var(--text);border:1px solid var(--border)}
+.btn-ghost:hover{background:var(--s3)}
+.btn-danger{background:rgba(245,74,74,0.1);color:var(--danger);border:1px solid rgba(245,74,74,0.2)}
+.btn-danger:hover{background:rgba(245,74,74,0.2)}
+.btn-sm{padding:5px 12px;font-size:12px;border-radius:7px}
+.btn-icon{width:32px;height:32px;padding:0;justify-content:center;border-radius:8px}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r)}
+.section-title{font-family:var(--fh);font-size:15px;font-weight:700;margin-bottom:14px}
+
+.form-group{margin-bottom:14px}
+.form-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;display:block;margin-bottom:5px}
+.form-input{
+  width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;
+  padding:10px 13px;color:var(--text);font-size:14px;outline:none;transition:border-color 0.15s;
+  -webkit-appearance:none;
+}
+.form-input:focus{border-color:rgba(200,245,74,0.4)}
+.form-row{display:grid;gap:10px}
+.form-row-2{grid-template-columns:1fr 1fr}
+.form-row-3{grid-template-columns:1fr 1fr 1fr}
+.form-row-4{grid-template-columns:2fr 1fr 1fr 1fr}
+
+/* ── MODAL ── */
+.modal-bg{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);
+  z-index:300;align-items:center;justify-content:center;padding:16px;
+  backdrop-filter:blur(4px);
+}
+.modal-bg.open{display:flex}
+.modal{
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  width:100%;max-width:560px;max-height:90vh;overflow-y:auto;
+  animation:modalIn 0.2s ease;
+}
+@keyframes modalIn{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:none}}
+.modal-head{padding:20px 22px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--surface);z-index:1}
+.modal-title{font-family:var(--fh);font-size:17px;font-weight:700}
+.modal-close{background:var(--s3);border:none;color:var(--text);width:28px;height:28px;border-radius:50%;font-size:15px;display:flex;align-items:center;justify-content:center;transition:background 0.15s}
+.modal-close:hover{background:var(--s4)}
+.modal-body{padding:20px 22px}
+.modal-foot{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:var(--surface)}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:20px;right:20px;padding:12px 20px;border-radius:10px;
+  font-weight:600;font-size:13px;z-index:999;transform:translateY(80px);opacity:0;
+  transition:all 0.3s;pointer-events:none;max-width:280px;
+}
+.toast.show{transform:translateY(0);opacity:1}
+.toast-success{background:var(--accent);color:#0f0f0f}
+.toast-error{background:var(--danger);color:#fff}
+
+/* ── LOADING ── */
+.loading{display:flex;align-items:center;justify-content:center;padding:48px;color:var(--muted);gap:10px;flex-direction:column}
+.spinner{width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty-icon{font-size:36px;margin-bottom:12px}
+.empty-text{font-size:14px;line-height:1.5}
+
+/* ══════════════════════════════
+   DASHBOARD
+══════════════════════════════ */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px}
+.stat-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+  padding:20px;position:relative;overflow:hidden;
+}
+.stat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent)}
+.stat-card.green::after{background:var(--accent2)}
+.stat-card.red::after{background:var(--danger)}
+.stat-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:8px}
+.stat-value{font-family:var(--fh);font-size:34px;font-weight:800}
+.stat-sub{font-size:12px;color:var(--muted);margin-top:3px}
+
+.page-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+.page-header-left h2{font-family:var(--fh);font-size:20px;font-weight:800}
+.page-header-left p{font-size:13px;color:var(--muted);margin-top:3px}
+
+/* ── CLIENT CARDS ── */
+.client-list{display:flex;flex-direction:column;gap:8px}
+.client-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+  padding:16px 18px;display:flex;align-items:center;gap:14px;
+  transition:border-color 0.2s;
+}
+.client-card:hover{border-color:rgba(200,245,74,0.25)}
+.avatar{
+  width:42px;height:42px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-family:var(--fh);font-weight:800;font-size:14px;flex-shrink:0;
+  border:1.5px solid var(--border);
+}
+.client-info{flex:1;min-width:0}
+.client-name{font-weight:600;font-size:15px}
+.client-meta{font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.client-actions{display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap}
+.badge{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:0.2px;white-space:nowrap}
+.badge-green{background:rgba(74,245,160,0.12);color:var(--accent2)}
+.badge-yellow{background:rgba(200,245,74,0.1);color:var(--accent)}
+.badge-gray{background:rgba(255,255,255,0.06);color:var(--muted)}
+
+/* ══════════════════════════════
+   WORKOUTS PAGE
+══════════════════════════════ */
+.workout-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+  margin-bottom:10px;overflow:hidden;
+}
+.workout-head{
+  padding:16px 18px;display:flex;align-items:center;gap:12px;cursor:pointer;
+  transition:background 0.15s;user-select:none;
+}
+.workout-head:hover{background:var(--s2)}
+.workout-icon{width:38px;height:38px;border-radius:8px;background:rgba(200,245,74,0.08);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.workout-title{font-weight:600;font-size:15px}
+.workout-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.workout-count{font-family:var(--fh);font-size:22px;font-weight:800;color:var(--accent);margin-left:auto;padding-right:8px}
+.chevron{color:var(--muted);font-size:14px;transition:transform 0.2s;flex-shrink:0}
+.chevron.open{transform:rotate(180deg)}
+.workout-body{display:none;border-top:1px solid var(--border)}
+.workout-body.open{display:block}
+
+/* ── EXERCISES TABLE ── */
+.ex-table{width:100%;border-collapse:collapse}
+.ex-table th{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;padding:10px 14px;text-align:left;background:rgba(255,255,255,0.02)}
+.ex-table td{padding:10px 14px;border-top:1px solid var(--border);vertical-align:middle}
+.ex-table tr:hover td{background:rgba(255,255,255,0.015)}
+.ex-name{font-weight:500}
+.ex-video-btn{
+  display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;
+  color:var(--accent);background:rgba(200,245,74,0.08);padding:3px 8px;border-radius:5px;
+  border:none;cursor:pointer;transition:background 0.15s;font-family:var(--fb);
+}
+.ex-video-btn:hover{background:rgba(200,245,74,0.15)}
+.prog-btn{
+  font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid var(--border);
+  color:var(--muted);background:var(--s3);cursor:pointer;font-family:var(--fb);
+  transition:all 0.15s;
+}
+.prog-btn:hover{border-color:rgba(200,245,74,0.3);color:var(--accent)}
+.workout-footer{padding:12px 18px;display:flex;justify-content:flex-end;gap:8px;background:rgba(255,255,255,0.01)}
+
+/* ══════════════════════════════
+   VIDEOS PAGE
+══════════════════════════════ */
+.videos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.video-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+  overflow:hidden;cursor:pointer;transition:border-color 0.2s,transform 0.2s;
+}
+.video-card:hover{border-color:rgba(200,245,74,0.3);transform:translateY(-2px)}
+.video-thumb{
+  aspect-ratio:16/9;background:var(--s2);display:flex;align-items:center;
+  justify-content:center;font-size:28px;position:relative;overflow:hidden;
+}
+.video-thumb video{width:100%;height:100%;object-fit:cover}
+.video-play-overlay{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,0.4);opacity:0;transition:opacity 0.2s;
+}
+.video-card:hover .video-play-overlay{opacity:1}
+.play-circle{width:40px;height:40px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center}
+.play-tri{width:0;height:0;border-top:8px solid transparent;border-bottom:8px solid transparent;border-left:13px solid #0f0f0f;margin-left:3px}
+.video-info{padding:12px}
+.video-name{font-weight:600;font-size:13px}
+.video-type{font-size:11px;color:var(--muted);margin-top:3px}
+
+/* ══════════════════════════════
+   CLIENT VIEW (public)
+══════════════════════════════ */
+.client-header{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+  padding:22px;margin-bottom:20px;
+}
+.client-greeting{font-family:var(--fh);font-size:24px;font-weight:800;margin-bottom:4px}
+.client-sub{font-size:13px;color:var(--muted)}
+.progress-wrap{margin-top:14px}
+.progress-label{font-size:12px;color:var(--muted);margin-bottom:6px;display:flex;justify-content:space-between}
+.progress-track{height:5px;background:var(--s3);border-radius:3px;overflow:hidden}
+.progress-fill{height:5px;background:var(--accent);border-radius:3px;transition:width 0.5s ease}
+
+.wc-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:12px;overflow:hidden}
+.wc-head{padding:16px 18px;display:flex;align-items:center;gap:14px}
+.wc-day-badge{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:3px}
+.wc-title{font-family:var(--fh);font-size:16px;font-weight:700}
+.done-check{
+  width:26px;height:26px;border-radius:50%;border:2px solid var(--border);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  transition:all 0.25s;margin-left:auto;
+}
+.done-check.done{background:var(--accent2);border-color:var(--accent2);color:#0f0f0f;font-size:13px;font-weight:800}
+.wc-exercises{padding:0 18px 14px}
+.wc-ex-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--border)}
+.wc-ex-info{flex:1}
+.wc-ex-name{font-weight:500;font-size:14px}
+.wc-ex-sets{font-size:12px;color:var(--muted);margin-top:2px}
+.wc-video-btn{
+  width:50px;height:36px;border-radius:7px;background:var(--s3);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;
+  color:var(--accent);font-size:14px;transition:all 0.15s;
+}
+.wc-video-btn:hover{background:var(--s4);border-color:rgba(200,245,74,0.3)}
+.complete-btn{
+  width:100%;padding:14px;background:rgba(200,245,74,0.07);border:none;
+  border-top:1px solid var(--border);color:var(--accent);font-family:var(--fh);
+  font-size:14px;font-weight:700;letter-spacing:0.3px;cursor:pointer;transition:all 0.2s;
+}
+.complete-btn:hover:not(:disabled){background:rgba(200,245,74,0.14)}
+.complete-btn.done{background:rgba(74,245,160,0.07);color:var(--accent2);cursor:default}
+.complete-btn:disabled{opacity:0.5;cursor:default}
+
+/* ── VIDEO MODAL ── */
+.video-preview{
+  background:var(--s2);border-radius:10px;aspect-ratio:16/9;
+  display:flex;align-items:center;justify-content:center;margin-bottom:14px;
+  overflow:hidden;position:relative;
+}
+.video-preview video{width:100%;height:100%;object-fit:contain}
+.video-preview iframe{width:100%;height:100%;border:none}
+.video-placeholder{text-align:center;color:var(--muted)}
+.video-placeholder .icon{font-size:36px;margin-bottom:8px}
+
+.prog-block{margin-top:16px}
+.prog-block-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px}
+.prog-item{
+  display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;
+  background:var(--s3);margin-bottom:6px;font-size:13px;
+}
+.prog-arrow-reg{color:var(--muted)}
+.prog-arrow-prog{color:var(--accent2)}
+
+/* ── SHARE LINK ── */
+.link-box{display:flex;gap:8px}
+.link-input{flex:1;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--muted);font-size:12px;font-family:var(--fb);outline:none}
+.copy-btn{background:var(--accent);color:#0f0f0f;border:none;border-radius:8px;padding:9px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:var(--fb)}
+.copy-btn:hover{background:#d4ff5a}
+
+/* ── EXERCISE ROW IN FORM ── */
+.ex-form-row{
+  display:grid;grid-template-columns:2fr 60px 70px 60px 28px;gap:6px;
+  align-items:center;margin-bottom:6px;
+}
+
+/* ── UPLOAD AREA ── */
+.upload-area{
+  border:1.5px dashed var(--border);border-radius:8px;padding:24px;
+  text-align:center;cursor:pointer;transition:border-color 0.15s;
+}
+.upload-area:hover,.upload-area.drag{border-color:rgba(200,245,74,0.4);background:rgba(200,245,74,0.03)}
+.upload-icon{font-size:28px;margin-bottom:6px}
+.upload-text{font-size:13px;color:var(--muted)}
+.upload-text strong{color:var(--accent)}
+.upload-progress{height:4px;background:var(--s3);border-radius:2px;margin-top:12px;overflow:hidden;display:none}
+.upload-progress-fill{height:4px;background:var(--accent);border-radius:2px;width:0;transition:width 0.3s}
+
+/* ── COLORS for avatars ── */
+.av1{background:rgba(200,245,74,0.1);color:var(--accent);border-color:rgba(200,245,74,0.2)}
+.av2{background:rgba(74,245,160,0.1);color:var(--accent2);border-color:rgba(74,245,160,0.2)}
+.av3{background:rgba(74,140,245,0.1);color:#7ab8f5;border-color:rgba(74,140,245,0.2)}
+.av4{background:rgba(245,160,74,0.1);color:#f5a04a;border-color:rgba(245,160,74,0.2)}
+.av5{background:rgba(200,74,245,0.1);color:#c84af5;border-color:rgba(200,74,245,0.2)}
+
+/* ── ANAMNESE ── */
+.anamnese-section{
+  border-bottom:1px solid var(--border);margin-bottom:20px;padding-bottom:20px;
+}
+.anamnese-section-title{
+  font-family:var(--fh);font-size:13px;font-weight:700;color:var(--accent);
+  text-transform:uppercase;letter-spacing:0.8px;margin-bottom:14px;
+  display:flex;align-items:center;gap:6px;
+}
+.anamnese-subsection{
+  font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;
+  letter-spacing:0.5px;margin:12px 0 8px;padding-bottom:4px;
+  border-bottom:1px solid var(--border);
+}
+.checkbox-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+  gap:6px;margin-top:4px;
+}
+.cb-label{
+  display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text);
+  background:var(--s2);border:1px solid var(--border);border-radius:7px;
+  padding:7px 10px;cursor:pointer;transition:all 0.15s;user-select:none;
+}
+.cb-label:hover{border-color:rgba(200,245,74,0.3);background:var(--s3)}
+.cb-label input[type=checkbox]{
+  width:14px;height:14px;accent-color:var(--accent);flex-shrink:0;cursor:pointer;
+}
+.cb-label input[type=checkbox]:checked + *{color:var(--accent)}
+.cb-label:has(input:checked){
+  border-color:rgba(200,245,74,0.35);background:rgba(200,245,74,0.05);
+}
+
+/* ── CLIENT DETAIL ── */
+.client-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.detail-item{background:var(--s2);border-radius:8px;padding:10px 12px}
+.detail-label{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px}
+.detail-value{font-size:13px;font-weight:500}
+
+@media(max-width:600px){
+  .stats-row{grid-template-columns:1fr 1fr}
+  .stats-row .stat-card:last-child{grid-column:1/-1}
+  .nav-tab{padding:6px 10px;font-size:12px}
+  .topnav{padding:12px 16px}
+  .page{padding:14px}
+  .form-row-3{grid-template-columns:1fr 1fr}
+  .form-row-4{grid-template-columns:1fr 1fr}
+  .client-actions{display:none}
+  .ex-table th:nth-child(n+4),.ex-table td:nth-child(n+4){display:none}
+  .videos-grid{grid-template-columns:1fr 1fr}
+  .checkbox-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- ── TOP NAV ── -->
+  <nav class="topnav" id="topnav">
+    <div class="logo">CALI<span>PT</span></div>
+    <div class="nav-tabs" id="navTabs">
+      <button class="nav-tab active" data-page="dashboard">Dashboard</button>
+      <button class="nav-tab" data-page="workouts">Treinos</button>
+      <button class="nav-tab" data-page="videos">Vídeos</button>
+    </div>
+  </nav>
+
+  <!-- ── DASHBOARD ── -->
+  <div class="page active" id="page-dashboard">
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Clientes ativos</div>
+        <div class="stat-value" id="stat-clients">—</div>
+        <div class="stat-sub">total de clientes</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-label">Treinos criados</div>
+        <div class="stat-value" id="stat-workouts" style="color:var(--accent2)">—</div>
+        <div class="stat-sub">na plataforma</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Vídeos</div>
+        <div class="stat-value" id="stat-videos">—</div>
+        <div class="stat-sub">na biblioteca</div>
+      </div>
+    </div>
+
+    <div class="page-header">
+      <div class="page-header-left">
+        <h2>Clientes</h2>
+        <p>Clica num cliente para gerir os seus treinos</p>
+      </div>
+      <button class="btn btn-accent" onclick="openModal('modalClient')">+ Novo cliente</button>
+    </div>
+    <div id="clientsList"></div>
+  </div>
+
+  <!-- ── WORKOUTS ── -->
+  <div class="page" id="page-workouts">
+    <div class="page-header">
+      <div class="page-header-left">
+        <h2 id="workoutsTitle">Treinos</h2>
+        <p id="workoutsSub">Seleciona um cliente no Dashboard</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap" id="workoutsActions" style="display:none">
+        <button class="btn btn-ghost btn-sm" id="btnShareLink" onclick="openShareModal()">🔗 Link do cliente</button>
+        <button class="btn btn-accent btn-sm" onclick="openModal('modalWorkout')">+ Novo treino</button>
+      </div>
+    </div>
+    <div id="workoutsList"></div>
+  </div>
+
+  <!-- ── VIDEOS ── -->
+  <div class="page" id="page-videos">
+    <div class="page-header">
+      <div class="page-header-left">
+        <h2>Biblioteca de Vídeos</h2>
+        <p>Os teus vídeos de exercícios — demonstrações, regressões e progressões</p>
+      </div>
+      <button class="btn btn-accent" onclick="openModal('modalVideo')">+ Adicionar vídeo</button>
+    </div>
+    <div id="videosList"></div>
+  </div>
+
+  <!-- ── CLIENT PUBLIC VIEW ── -->
+  <div class="page" id="page-client">
+    <div id="clientViewContent"></div>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════
+     MODALS
+════════════════════════════════ -->
+
+<!-- New / Edit Client — Ficha de Anamnese -->
+<div class="modal-bg" id="modalClient">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" id="modalClientTitle">Ficha de Anamnese</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">Francisco Pinto · Calistenia e Performance</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modalClient')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="clientId">
+
+      <!-- SECÇÃO 1: IDENTIFICAÇÃO -->
+      <div class="anamnese-section">
+        <div class="anamnese-section-title">👤 Identificação Pessoal</div>
+        <div class="form-group">
+          <label class="form-label">Nome completo</label>
+          <input class="form-input" id="clientName" placeholder="Nome e apelido">
+        </div>
+        <div class="form-row form-row-2">
+          <div class="form-group">
+            <label class="form-label">Data de nascimento</label>
+            <input class="form-input" id="clientDob" type="date">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sexo</label>
+            <select class="form-input" id="clientSex">
+              <option value="">— Selecionar —</option>
+              <option value="M">Masculino</option>
+              <option value="F">Feminino</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Profissão</label>
+          <input class="form-input" id="clientProfession" placeholder="Ex: Engenheiro, Professor...">
+        </div>
+        <div class="form-row form-row-2">
+          <div class="form-group">
+            <label class="form-label">Telefone</label>
+            <input class="form-input" id="clientPhone" type="tel" placeholder="+351 9xx xxx xxx">
+          </div>
+          <div class="form-group">
+            <label class="form-label">E-mail</label>
+            <input class="form-input" id="clientEmail" type="email" placeholder="email@exemplo.com">
+          </div>
+        </div>
+      </div>
+
+      <!-- SECÇÃO 2: OBJETIVOS -->
+      <div class="anamnese-section">
+        <div class="anamnese-section-title">🎯 Objetivos</div>
+        <div class="form-group">
+          <textarea class="form-input" id="clientGoals" rows="3" placeholder="Descreve os objetivos do cliente — perda de peso, força, mobilidade, aprender handstand..."></textarea>
+        </div>
+      </div>
+
+      <!-- SECÇÃO 3: HISTÓRICO -->
+      <div class="anamnese-section">
+        <div class="anamnese-section-title">🩺 Histórico</div>
+        <div class="form-group">
+          <label class="form-label">Lesões / Limitações físicas</label>
+          <textarea class="form-input" id="clientInjuries" rows="2" placeholder="Lesões passadas ou atuais, dores crónicas, cirurgias..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Experiência de treino</label>
+          <textarea class="form-input" id="clientExperience" rows="2" placeholder="Histórico de treino, desportos praticados, anos de experiência..."></textarea>
+        </div>
+      </div>
+
+      <!-- SECÇÃO 4: TREINO -->
+      <div class="anamnese-section">
+        <div class="anamnese-section-title">💪 Contexto de Treino</div>
+        <div class="form-row form-row-3">
+          <div class="form-group">
+            <label class="form-label">Nível</label>
+            <select class="form-input" id="clientLevel">
+              <option value="Iniciante">Iniciante</option>
+              <option value="Intermédio">Intermédio</option>
+              <option value="Avançado">Avançado</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Local de treino</label>
+            <select class="form-input" id="clientLocation">
+              <option value="Em casa">Em casa</option>
+              <option value="Ginásio / Box">Ginásio / Box</option>
+              <option value="Street Workout">Street Workout / Parque</option>
+              <option value="Online">Online (remoto)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Frequência</label>
+            <select class="form-input" id="clientFreq">
+              <option value="1×/semana">1×/semana</option>
+              <option value="2×/semana">2×/semana</option>
+              <option value="3×/semana" selected>3×/semana</option>
+              <option value="4×/semana">4×/semana</option>
+              <option value="5×/semana">5×/semana</option>
+            <option value="Todos os dias">Todos os dias</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Material disponível</label>
+          <div class="checkbox-grid" id="equipmentGrid">
+            <label class="cb-label"><input type="checkbox" value="Barra fixa"> Barra fixa</label>
+            <label class="cb-label"><input type="checkbox" value="Paralelas / Paralletes"> Paralelas / Paralletes</label>
+            <label class="cb-label"><input type="checkbox" value="Rings / Argolas"> Rings / Argolas</label>
+            <label class="cb-label"><input type="checkbox" value="Kettlebell"> Kettlebell</label>
+            <label class="cb-label"><input type="checkbox" value="Halteres"> Halteres</label>
+            <label class="cb-label"><input type="checkbox" value="Bandas elásticas"> Bandas elásticas</label>
+            <label class="cb-label"><input type="checkbox" value="Corda de saltar"> Corda de saltar</label>
+            <label class="cb-label"><input type="checkbox" value="TRX / Suspensão"> TRX / Suspensão</label>
+            <label class="cb-label"><input type="checkbox" value="Nada (peso corporal)"> Só peso corporal</label>
+          </div>
+          <input class="form-input" id="clientEquipmentExtra" placeholder="Outro material..." style="margin-top:8px;font-size:13px">
+        </div>
+      </div>
+
+      <!-- SECÇÃO 5: TESTES -->
+      <div class="anamnese-section">
+        <div class="anamnese-section-title">🤸 Testes de Avaliação Inicial</div>
+
+        <div class="anamnese-subsection">Testes Dinâmicos (Padrão)</div>
+        <div class="form-row form-row-4">
+          <div class="form-group">
+            <label class="form-label">Push-up (máx. reps / técnica)</label>
+            <input class="form-input" id="testPushup" placeholder="Ex: 12">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Agachamento (máx. reps / amplitude)</label>
+            <input class="form-input" id="testSquat" placeholder="Ex: 25">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sit-up (máx. reps / controlo)</label>
+            <input class="form-input" id="testSitup" placeholder="Ex: 20">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Pull-up (máx. reps)</label>
+            <input class="form-input" id="testPullup" placeholder="Ex: 8">
+          </div>
+        </div>
+
+        <div class="anamnese-subsection">Testes Estáticos (Resistência)</div>
+        <div class="form-row form-row-3">
+          <div class="form-group">
+            <label class="form-label">High Plank (máx. hold)</label>
+            <input class="form-input" id="testPlank" placeholder="Ex: 45s">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Hollow Body (máx. hold)</label>
+            <input class="form-input" id="testHollow" placeholder="Ex: 20s">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Wall Sit (máx. hold)</label>
+            <input class="form-group" id="testWallsit" placeholder="Ex: 60s" style="width:100%">
+          </div>
+        </div>
+
+        <div class="anamnese-subsection">Testes Resistência Cardio</div>
+        <div class="form-row form-row-3">
+          <div class="form-group">
+            <label class="form-label">Teste de Cooper (12 min)</label>
+            <input class="form-input" id="testCooper" placeholder="Ex: 2.4km">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Burpees (máx. 7 min)</label>
+            <input class="form-input" id="testBurpees" placeholder="Ex: 48">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Saltos à corda (2 min)</label>
+            <input class="form-input" id="testRope" placeholder="Ex: 120">
+          </div>
+        </div>
+      </div>
+
+      <!-- NOTAS GERAIS -->
+      <div class="anamnese-section" style="border-bottom:none;margin-bottom:0;padding-bottom:0">
+        <div class="anamnese-section-title">📝 Notas do PT</div>
+        <div class="form-group" style="margin-bottom:0">
+          <textarea class="form-input" id="clientNotes" rows="2" placeholder="Observações pessoais, notas de acompanhamento..."></textarea>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modalClient')">Cancelar</button>
+      <button class="btn btn-accent" onclick="saveClient()">Guardar ficha</button>
+    </div>
+  </div>
+</div>
+
+<!-- New / Edit Workout -->
+<div class="modal-bg" id="modalWorkout">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="modalWorkoutTitle">Novo treino</div>
+      <button class="modal-close" onclick="closeModal('modalWorkout')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="workoutId">
+      <div class="form-group">
+        <label class="form-label">Nome do treino</label>
+        <input class="form-input" id="workoutTitle" placeholder="Ex: Treino A — Empurrar">
+      </div>
+      <div class="form-row form-row-3">
+        <div class="form-group">
+          <label class="form-label">Dia</label>
+          <select class="form-input" id="workoutDay">
+            <option value="Segunda">Segunda</option>
+            <option value="Terça">Terça</option>
+            <option value="Quarta">Quarta</option>
+            <option value="Quinta">Quinta</option>
+            <option value="Sexta">Sexta</option>
+            <option value="Sábado">Sábado</option>
+            <option value="Domingo">Domingo</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Semana / Fase</label>
+          <input class="form-input" id="workoutWeek" placeholder="Semana 1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Duração (min)</label>
+          <input class="form-input" id="workoutDuration" placeholder="45" type="number">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Exercícios</label>
+        <div style="display:grid;grid-template-columns:2fr 60px 70px 60px 28px;gap:6px;margin-bottom:4px;padding:0 4px">
+          <span style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Exercício</span>
+          <span style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Séries</span>
+          <span style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Reps</span>
+          <span style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Desc.</span>
+          <span></span>
+        </div>
+        <div id="exFormList"></div>
+        <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:6px" onclick="addExerciseRow()">+ Exercício</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notas para o cliente</label>
+        <textarea class="form-input" id="workoutNotes" rows="2" placeholder="Instruções gerais, foco do treino, aquecimento..."></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modalWorkout')">Cancelar</button>
+      <button class="btn btn-accent" onclick="saveWorkout()">Guardar treino</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add / Edit Video -->
+<div class="modal-bg" id="modalVideo">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Adicionar vídeo</div>
+      <button class="modal-close" onclick="closeModal('modalVideo')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="videoId">
+      <div class="form-group">
+        <label class="form-label">Nome do exercício</label>
+        <input class="form-input" id="videoName" placeholder="Ex: Push-up, Squat, L-sit...">
+      </div>
+      <div class="form-row form-row-2">
+        <div class="form-group">
+          <label class="form-label">Tipo</label>
+          <select class="form-input" id="videoType">
+            <option value="Demonstração">Demonstração principal</option>
+            <option value="Regressão">Regressão (mais fácil)</option>
+            <option value="Progressão">Progressão (mais difícil)</option>
+            <option value="Erros comuns">Erros comuns</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Exercício base (se regressão/prog.)</label>
+          <input class="form-input" id="videoBase" placeholder="Ex: Push-up">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Link do vídeo (YouTube, Google Drive, etc.)</label>
+        <input class="form-input" id="videoUrl" placeholder="https://youtube.com/watch?v=...">
+        <div style="font-size:11px;color:var(--muted);margin-top:5px">Cola o link do YouTube, Google Drive ou qualquer serviço de vídeo</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notas / Dicas de execução</label>
+        <textarea class="form-input" id="videoNotes" rows="3" placeholder="Pontos-chave de técnica, o que observar, erros a evitar..."></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modalVideo')">Cancelar</button>
+      <button class="btn btn-accent" onclick="saveVideo()">Guardar vídeo</button>
+    </div>
+  </div>
+</div>
+
+<!-- Video Player -->
+<div class="modal-bg" id="modalPlayer">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-head">
+      <div class="modal-title" id="playerTitle">—</div>
+      <button class="modal-close" onclick="closeModal('modalPlayer')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="video-preview" id="playerPreview"></div>
+      <div id="playerNotes" style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:14px"></div>
+      <div id="playerProgs"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Share Link -->
+<div class="modal-bg" id="modalShare">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-head">
+      <div class="modal-title" id="shareTitle">Link do cliente</div>
+      <button class="modal-close" onclick="closeModal('modalShare')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6">
+        Partilha este link com o teu cliente. Ele abre no browser e vê os treinos, os vídeos e pode marcar como concluído — sem conta, sem registo.
+      </p>
+      <div class="form-group">
+        <label class="form-label">Link de acesso</label>
+        <div class="link-box">
+          <input class="link-input" id="shareLinkInput" readonly>
+          <button class="copy-btn" onclick="copyLink()">Copiar</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="btn btn-ghost" style="flex:1" onclick="openWhatsApp()">💬 WhatsApp</button>
+        <button class="btn btn-ghost" style="flex:1" onclick="openEmail()">✉️ Email</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════════════
+const SUPABASE_URL = 'https://ngzuhtsxytbalxzrhdxj.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5nenVodHN4eXRiYWx4enJoZHhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NDAyNDgsImV4cCI6MjA5NTMxNjI0OH0.I4ffhC3lbZltQ1YiMh2IroGGY6KGD9pzMxj8aRdolDw';
+
+// Lightweight Supabase client using raw fetch (no SDK dependency)
+const sb = {
+  _url: SUPABASE_URL,
+  _key: SUPABASE_KEY,
+  _headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY },
+
+  from(table) {
+    return new SbQuery(this._url + '/rest/v1/' + table, this._headers);
+  }
+};
+
+class SbQuery {
+  constructor(url, headers) {
+    this._base = url;
+    this._url = url;
+    this._headers = headers;
+    this._method = 'GET';
+    this._body = null;
+    this._prefer = '';
+  }
+  select(cols) { const c = (!cols || cols === '*') ? '*' : cols; this._url += (this._url.includes('?') ? '&' : '?') + 'select=' + c; this._hasSel = true; return this; }
+  order(col, opts) {
+    const sep = this._url.includes('?') ? '&' : '?';
+    this._url += sep + 'order=' + col + (opts && opts.ascending === false ? '.desc' : '.asc');
+    return this;
+  }
+  eq(col, val) { this._url += (this._url.includes('?') ? '&' : '?') + col + '=eq.' + encodeURIComponent(val); return this; }
+  in(col, vals) { this._url += (this._url.includes('?') ? '&' : '?') + col + '=in.(' + vals.map(v => encodeURIComponent(v)).join(',') + ')'; return this; }
+  insert(data) { this._method = 'POST'; this._body = JSON.stringify(data); this._prefer = 'return=representation'; return this; }
+  update(data) { this._method = 'PATCH'; this._body = JSON.stringify(data); this._prefer = 'return=representation'; return this; }
+  delete() { this._method = 'DELETE'; this._prefer = 'return=representation'; return this; }
+  single() { this._single = true; return this; }
+  async _run() {
+    const h = { ...this._headers };
+    if (this._prefer) h['Prefer'] = this._prefer;
+    if (this._method === 'GET' && !this._hasSel) { this._url += (this._url.includes('?') ? '&' : '?') + 'select=*'; }
+    try {
+      const res = await fetch(this._url, { method: this._method, headers: h, body: this._body || undefined });
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : null;
+      if (!res.ok) return { data: null, error: { message: (data && (data.message || data.hint || data.error)) || 'HTTP ' + res.status } };
+      const result = this._single ? (Array.isArray(data) ? data[0] : data) : data;
+      return { data: result, error: null };
+    } catch(e) { return { data: null, error: { message: e.message } }; }
+  }
+  then(resolve, reject) { return this._run().then(resolve, reject); }
+};
+
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+let state = {
+  clients: [],
+  workouts: [],
+  exercises: [],
+  videos: [],
+  completions: [],
+  currentClientId: null,
+  currentWorkoutId: null,
+  isClientView: false,
+};
+
+// ══════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', async () => {
+  // Check if client view via URL token
+  const params = new URLSearchParams(location.search);
+  const token = params.get('t');
+  if (token) {
+    showClientView(token);
+    return;
+  }
+
+  // PT view
+  setupNav();
+  await loadAll();
+  renderDashboard();
+});
+
+function setupNav() {
+  document.querySelectorAll('.nav-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById('page-' + tab.dataset.page).classList.add('active');
+      if (tab.dataset.page === 'videos') renderVideos();
+      if (tab.dataset.page === 'workouts' && state.currentClientId) renderWorkouts();
+    });
+  });
+}
+
+async function loadAll() {
+  const [c, w, e, v] = await Promise.all([
+    sb.from('clients').select('*').order('created_at', {ascending: false}),
+    sb.from('workouts').select('*').order('created_at', {ascending: true}),
+    sb.from('exercises').select('*').order('sort_order'),
+    sb.from('videos').select('*').order('created_at', {ascending: false}),
+  ]);
+  state.clients = c.data || [];
+  state.workouts = w.data || [];
+  state.exercises = e.data || [];
+  state.videos = v.data || [];
+
+  document.getElementById('stat-clients').textContent = state.clients.length;
+  document.getElementById('stat-workouts').textContent = state.workouts.length;
+  document.getElementById('stat-videos').textContent = state.videos.length;
+}
+
+// ══════════════════════════════════════════════
+//  DASHBOARD
+// ══════════════════════════════════════════════
+function renderDashboard() {
+  const el = document.getElementById('clientsList');
+  if (!state.clients.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🤸</div><div class="empty-text">Ainda não tens clientes.<br>Clica em "Novo cliente" para começar!</div></div>`;
+    return;
+  }
+  const colors = ['av1','av2','av3','av4','av5'];
+  el.innerHTML = state.clients.map((c, i) => {
+    const initials = c.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+    const av = colors[i % colors.length];
+    const clientWorkouts = state.workouts.filter(w => w.client_id === c.id);
+    const badge = clientWorkouts.length === 0
+      ? `<span class="badge badge-gray">Sem treinos</span>`
+      : `<span class="badge badge-yellow">${clientWorkouts.length} treino${clientWorkouts.length>1?'s':''}</span>`;
+    return `
+      <div class="client-card">
+        <div class="avatar ${av}">${initials}</div>
+        <div class="client-info">
+          <div class="client-name">${c.name}</div>
+          <div class="client-meta">${c.level || '—'} · ${c.location || '—'} · ${c.frequency || '—'}${c.equipment && c.equipment.length ? ' · ' + c.equipment.slice(0,2).join(', ') + (c.equipment.length > 2 ? '…' : '') : ''}</div>
+        </div>
+        <div class="client-actions">
+          ${badge}
+          <button class="btn btn-ghost btn-sm" onclick="selectClient('${c.id}')">Ver treinos</button>
+          <button class="btn btn-ghost btn-sm" onclick="editClient('${c.id}')">Editar</button>
+          <button class="btn btn-ghost btn-sm" onclick="shareClient('${c.id}')">🔗 Link</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteClient('${c.id}')">✕</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════
+//  CLIENTS CRUD
+// ══════════════════════════════════════════════
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-bg').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+function getCheckedEquipment() {
+  return [...document.querySelectorAll('#equipmentGrid input:checked')].map(i => i.value);
+}
+function setCheckedEquipment(arr) {
+  document.querySelectorAll('#equipmentGrid input').forEach(i => {
+    i.checked = arr && arr.includes(i.value);
+  });
+}
+
+async function saveClient() {
+  const id = document.getElementById('clientId').value;
+  const equipment = getCheckedEquipment();
+  const extra = document.getElementById('clientEquipmentExtra').value.trim();
+  if (extra) equipment.push(extra);
+
+  const data = {
+    name: document.getElementById('clientName').value.trim(),
+    dob: document.getElementById('clientDob').value || null,
+    sex: document.getElementById('clientSex').value || null,
+    profession: document.getElementById('clientProfession').value.trim(),
+    phone: document.getElementById('clientPhone').value.trim(),
+    email: document.getElementById('clientEmail').value.trim(),
+    goals: document.getElementById('clientGoals').value.trim(),
+    injuries: document.getElementById('clientInjuries').value.trim(),
+    experience: document.getElementById('clientExperience').value.trim(),
+    level: document.getElementById('clientLevel').value,
+    location: document.getElementById('clientLocation').value,
+    frequency: document.getElementById('clientFreq').value,
+    equipment: equipment,
+    test_pushup: document.getElementById('testPushup').value.trim(),
+    test_squat: document.getElementById('testSquat').value.trim(),
+    test_situp: document.getElementById('testSitup').value.trim(),
+    test_pullup: document.getElementById('testPullup').value.trim(),
+    test_plank: document.getElementById('testPlank').value.trim(),
+    test_hollow: document.getElementById('testHollow').value.trim(),
+    test_wallsit: document.getElementById('testWallsit').value.trim(),
+    test_cooper: document.getElementById('testCooper').value.trim(),
+    test_burpees: document.getElementById('testBurpees').value.trim(),
+    test_rope: document.getElementById('testRope').value.trim(),
+    notes: document.getElementById('clientNotes').value.trim(),
+  };
+  if (!data.name) { toast('Insere o nome do cliente', 'error'); return; }
+
+  let err;
+  if (id) {
+    ({ error: err } = await sb.from('clients').update(data).eq('id', id));
+  } else {
+    ({ error: err } = await sb.from('clients').insert(data));
+  }
+  if (err) { toast('Erro: ' + err.message, 'error'); return; }
+  closeModal('modalClient');
+  toast(id ? 'Ficha atualizada!' : 'Cliente criado!');
+  await loadAll();
+  renderDashboard();
+}
+
+function editClient(id) {
+  const c = state.clients.find(x => x.id === id);
+  document.getElementById('clientId').value = c.id;
+  document.getElementById('clientName').value = c.name || '';
+  document.getElementById('clientDob').value = c.dob || '';
+  document.getElementById('clientSex').value = c.sex || '';
+  document.getElementById('clientProfession').value = c.profession || '';
+  document.getElementById('clientPhone').value = c.phone || '';
+  document.getElementById('clientEmail').value = c.email || '';
+  document.getElementById('clientGoals').value = c.goals || '';
+  document.getElementById('clientInjuries').value = c.injuries || '';
+  document.getElementById('clientExperience').value = c.experience || '';
+  document.getElementById('clientLevel').value = c.level || 'Iniciante';
+  document.getElementById('clientLocation').value = c.location || 'Em casa';
+  document.getElementById('clientFreq').value = c.frequency || '3×/semana';
+  setCheckedEquipment(c.equipment || []);
+  document.getElementById('clientEquipmentExtra').value = '';
+  document.getElementById('testPushup').value = c.test_pushup || '';
+  document.getElementById('testSquat').value = c.test_squat || '';
+  document.getElementById('testSitup').value = c.test_situp || '';
+  document.getElementById('testPullup').value = c.test_pullup || '';
+  document.getElementById('testPlank').value = c.test_plank || '';
+  document.getElementById('testHollow').value = c.test_hollow || '';
+  document.getElementById('testWallsit').value = c.test_wallsit || '';
+  document.getElementById('testCooper').value = c.test_cooper || '';
+  document.getElementById('testBurpees').value = c.test_burpees || '';
+  document.getElementById('testRope').value = c.test_rope || '';
+  document.getElementById('clientNotes').value = c.notes || '';
+  document.getElementById('modalClientTitle').textContent = 'Editar ficha';
+  openModal('modalClient');
+}
+
+async function deleteClient(id) {
+  if (!confirm('Apagar este cliente e todos os seus treinos?')) return;
+  const { error } = await sb.from('clients').delete().eq('id', id);
+  if (error) { toast('Erro ao apagar', 'error'); return; }
+  toast('Cliente apagado');
+  await loadAll();
+  renderDashboard();
+}
+
+function openNewClient() {
+  ['clientId','clientName','clientDob','clientProfession','clientPhone','clientEmail',
+   'clientGoals','clientInjuries','clientExperience','clientEquipmentExtra',
+   'testPushup','testSquat','testSitup','testPullup','testPlank','testHollow','testWallsit',
+   'testCooper','testBurpees','testRope','clientNotes'].forEach(i => {
+    const el = document.getElementById(i);
+    if (el) el.value = '';
+  });
+  document.getElementById('clientSex').value = '';
+  document.getElementById('clientLevel').value = 'Iniciante';
+  document.getElementById('clientLocation').value = 'Em casa';
+  document.getElementById('clientFreq').value = '3×/semana';
+  setCheckedEquipment([]);
+  document.getElementById('modalClientTitle').textContent = 'Ficha de Anamnese';
+  openModal('modalClient');
+}
+document.querySelector('[onclick="openModal(\'modalClient\')"]').onclick = openNewClient;
+
+// ══════════════════════════════════════════════
+//  WORKOUTS
+// ══════════════════════════════════════════════
+function selectClient(id) {
+  state.currentClientId = id;
+  const c = state.clients.find(x => x.id === id);
+  document.getElementById('workoutsTitle').textContent = `Treinos · ${c.name}`;
+  document.getElementById('workoutsSub').textContent = `${c.level} · ${c.location} · ${c.frequency}`;
+  document.getElementById('workoutsActions').style.display = 'flex';
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector('[data-page="workouts"]').classList.add('active');
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-workouts').classList.add('active');
+  renderWorkouts();
+}
+
+function renderWorkouts() {
+  const el = document.getElementById('workoutsList');
+  const clientWorkouts = state.workouts.filter(w => w.client_id === state.currentClientId);
+  if (!state.currentClientId) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">Seleciona um cliente no Dashboard.</div></div>`;
+    return;
+  }
+  if (!clientWorkouts.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">💪</div><div class="empty-text">Ainda não há treinos para este cliente.<br>Clica em "+ Novo treino"!</div></div>`;
+    return;
+  }
+  const icons = { Empurrar:'💪', Puxar:'🤸', Pernas:'🦵', Core:'🎯', Full:'⚡', Mobilidade:'🧘' };
+  el.innerHTML = clientWorkouts.map(w => {
+    const exs = state.exercises.filter(e => e.workout_id === w.id);
+    const iconKey = Object.keys(icons).find(k => w.title.includes(k)) || 'Full';
+    return `
+      <div class="workout-card">
+        <div class="workout-head" onclick="toggleWorkout(this)">
+          <div class="workout-icon">${icons[iconKey]}</div>
+          <div style="flex:1;min-width:0">
+            <div class="workout-title">${w.title}</div>
+            <div class="workout-sub">${w.day || ''} ${w.week ? '· ' + w.week : ''} ${w.duration ? '· ' + w.duration + ' min' : ''}</div>
+          </div>
+          <div class="workout-count">${exs.length}</div>
+          <div class="chevron">&#8964;</div>
+        </div>
+        <div class="workout-body">
+          ${exs.length ? `
+          <table class="ex-table">
+            <thead><tr>
+              <th>Exercício</th><th>Séries</th><th>Reps</th><th>Descanso</th><th>Vídeo</th><th></th>
+            </tr></thead>
+            <tbody>
+              ${exs.map(ex => {
+                const vid = state.videos.find(v => v.name.toLowerCase() === ex.name.toLowerCase());
+                return `<tr>
+                  <td><div class="ex-name">${ex.name}</div></td>
+                  <td>${ex.sets || '—'}</td>
+                  <td>${ex.reps || '—'}</td>
+                  <td>${ex.rest || '—'}</td>
+                  <td>${vid ? `<button class="ex-video-btn" onclick="playVideo('${vid.id}')">▶ ver</button>` : '<span style="color:var(--muted);font-size:12px">—</span>'}</td>
+                  <td>${ex.progressions || ex.regressions ? `<button class="prog-btn" onclick="playVideo('${vid ? vid.id : ''}', '${ex.id}')">reg/prog</button>` : ''}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>` : `<div style="padding:16px 18px;color:var(--muted);font-size:13px">Sem exercícios ainda.</div>`}
+          ${w.notes ? `<div style="padding:10px 18px;font-size:13px;color:var(--muted);border-top:1px solid var(--border);line-height:1.6">📝 ${w.notes}</div>` : ''}
+          <div class="workout-footer">
+            <button class="btn btn-ghost btn-sm" onclick="editWorkout('${w.id}')">Editar</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteWorkout('${w.id}')">Apagar</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleWorkout(el) {
+  const body = el.nextElementSibling;
+  const ch = el.querySelector('.chevron');
+  body.classList.toggle('open');
+  ch.classList.toggle('open');
+}
+
+// Exercise rows in workout form
+function addExerciseRow(data = {}) {
+  const list = document.getElementById('exFormList');
+  const row = document.createElement('div');
+  row.className = 'ex-form-row';
+  row.innerHTML = `
+    <input class="form-input ex-name-input" placeholder="Exercício" value="${data.name||''}" style="font-size:13px;padding:7px 10px">
+    <input class="form-input ex-sets-input" placeholder="3" value="${data.sets||''}" style="font-size:13px;padding:7px 10px">
+    <input class="form-input ex-reps-input" placeholder="10" value="${data.reps||''}" style="font-size:13px;padding:7px 10px">
+    <input class="form-input ex-rest-input" placeholder="60s" value="${data.rest||''}" style="font-size:13px;padding:7px 10px">
+    <button class="btn btn-danger btn-icon" onclick="this.parentElement.remove()" style="font-size:16px;padding:0;width:28px;height:28px;flex-shrink:0">×</button>`;
+  list.appendChild(row);
+}
+
+function getExerciseRows() {
+  return [...document.querySelectorAll('.ex-form-row')].map((row, i) => ({
+    name: row.querySelector('.ex-name-input').value.trim(),
+    sets: row.querySelector('.ex-sets-input').value.trim(),
+    reps: row.querySelector('.ex-reps-input').value.trim(),
+    rest: row.querySelector('.ex-rest-input').value.trim(),
+    sort_order: i,
+  })).filter(e => e.name);
+}
+
+async function saveWorkout() {
+  const id = document.getElementById('workoutId').value;
+  const data = {
+    client_id: state.currentClientId,
+    title: document.getElementById('workoutTitle').value.trim(),
+    day: document.getElementById('workoutDay').value,
+    week: document.getElementById('workoutWeek').value.trim(),
+    duration: document.getElementById('workoutDuration').value || null,
+    notes: document.getElementById('workoutNotes').value.trim(),
+  };
+  if (!data.title) { toast('Insere o nome do treino', 'error'); return; }
+  const exRows = getExerciseRows();
+
+  let workoutId = id;
+  if (id) {
+    const { error } = await sb.from('workouts').update(data).eq('id', id);
+    if (error) { toast('Erro: ' + error.message, 'error'); return; }
+    await sb.from('exercises').delete().eq('workout_id', id);
+  } else {
+    const { data: rows, error } = await sb.from('workouts').insert(data).select('*');
+    if (error) { toast('Erro: ' + error.message, 'error'); return; }
+    workoutId = Array.isArray(rows) ? rows[0].id : rows.id;
+  }
+
+  if (exRows.length) {
+    const { error: exErr } = await sb.from('exercises').insert(exRows.map(e => ({ ...e, workout_id: workoutId })));
+    if (exErr) { toast('Erro nos exercicios: ' + exErr.message, 'error'); return; }
+  }
+
+  closeModal('modalWorkout');
+  toast(id ? 'Treino atualizado!' : 'Treino criado!');
+  await loadAll();
+  renderWorkouts();
+}
+
+function editWorkout(id) {
+  const w = state.workouts.find(x => x.id === id);
+  const exs = state.exercises.filter(e => e.workout_id === id);
+  document.getElementById('workoutId').value = w.id;
+  document.getElementById('workoutTitle').value = w.title;
+  document.getElementById('workoutDay').value = w.day || 'Segunda';
+  document.getElementById('workoutWeek').value = w.week || '';
+  document.getElementById('workoutDuration').value = w.duration || '';
+  document.getElementById('workoutNotes').value = w.notes || '';
+  document.getElementById('exFormList').innerHTML = '';
+  exs.forEach(e => addExerciseRow(e));
+  document.getElementById('modalWorkoutTitle').textContent = 'Editar treino';
+  openModal('modalWorkout');
+}
+
+async function deleteWorkout(id) {
+  if (!confirm('Apagar este treino?')) return;
+  await sb.from('workouts').delete().eq('id', id);
+  toast('Treino apagado');
+  await loadAll();
+  renderWorkouts();
+}
+
+// reset workout modal
+const origWorkoutBtn = document.querySelector('[onclick="openModal(\'modalWorkout\')"]');
+origWorkoutBtn.onclick = () => {
+  document.getElementById('workoutId').value = '';
+  document.getElementById('workoutTitle').value = '';
+  document.getElementById('workoutWeek').value = '';
+  document.getElementById('workoutDuration').value = '';
+  document.getElementById('workoutNotes').value = '';
+  document.getElementById('exFormList').innerHTML = '';
+  document.getElementById('modalWorkoutTitle').textContent = 'Novo treino';
+  openModal('modalWorkout');
+};
+
+// ══════════════════════════════════════════════
+//  VIDEOS
+// ══════════════════════════════════════════════
+function renderVideos() {
+  const el = document.getElementById('videosList');
+  if (!state.videos.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📹</div><div class="empty-text">Ainda não tens vídeos na biblioteca.<br>Adiciona o link de um vídeo do YouTube ou Google Drive.</div></div>`;
+    return;
+  }
+  const typeIcon = { 'Demonstração':'🎬','Regressão':'⬇️','Progressão':'⬆️','Erros comuns':'⚠️' };
+  el.innerHTML = `<div class="videos-grid">${state.videos.map(v => `
+    <div class="video-card" onclick="playVideo('${v.id}')">
+      <div class="video-thumb">
+        <span style="font-size:32px">${typeIcon[v.type]||'🎬'}</span>
+        <div class="video-play-overlay"><div class="play-circle"><div class="play-tri"></div></div></div>
+      </div>
+      <div class="video-info">
+        <div class="video-name">${v.name}</div>
+        <div class="video-type">${v.type}</div>
+        ${v.base_exercise ? `<div style="font-size:11px;color:var(--muted)">Base: ${v.base_exercise}</div>` : ''}
+      </div>
+    </div>`).join('')}</div>`;
+}
+
+async function saveVideo() {
+  const id = document.getElementById('videoId').value;
+  const data = {
+    name: document.getElementById('videoName').value.trim(),
+    type: document.getElementById('videoType').value,
+    base_exercise: document.getElementById('videoBase').value.trim(),
+    url: document.getElementById('videoUrl').value.trim(),
+    notes: document.getElementById('videoNotes').value.trim(),
+  };
+  if (!data.name) { toast('Insere o nome do exercício', 'error'); return; }
+
+  const { error } = id
+    ? await sb.from('videos').update(data).eq('id', id)
+    : await sb.from('videos').insert(data);
+  if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  closeModal('modalVideo');
+  toast('Vídeo guardado!');
+  // reset
+  ['videoId','videoName','videoBase','videoUrl','videoNotes'].forEach(i => document.getElementById(i).value = '');
+  await loadAll();
+  renderVideos();
+}
+
+function playVideo(videoId, exId) {
+  const v = state.videos.find(x => x.id === videoId);
+  if (!v && !exId) { toast('Sem vídeo ligado a este exercício', 'error'); return; }
+
+  const title = v ? v.name : 'Exercício';
+  document.getElementById('playerTitle').textContent = title;
+
+  const preview = document.getElementById('playerPreview');
+  if (v && v.url) {
+    const ytMatch = v.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/);
+    if (ytMatch) {
+      preview.innerHTML = `<iframe src="https://www.youtube.com/embed/${ytMatch[1]}?rel=0" allowfullscreen></iframe>`;
+    } else {
+      preview.innerHTML = `<div class="video-placeholder"><div class="icon">🔗</div><a href="${v.url}" target="_blank" style="color:var(--accent);font-size:13px">Abrir vídeo ↗</a></div>`;
+    }
+  } else {
+    preview.innerHTML = `<div class="video-placeholder"><div class="icon">📹</div><div style="font-size:13px">Sem vídeo adicionado ainda</div></div>`;
+  }
+
+  document.getElementById('playerNotes').textContent = v?.notes || '';
+
+  // Regressões e progressões do mesmo exercício base
+  const baseName = v?.base_exercise || v?.name || '';
+  const related = state.videos.filter(x => x.id !== videoId && (x.base_exercise === baseName || x.name === baseName || x.base_exercise === v?.name));
+  const regs = related.filter(x => x.type === 'Regressão');
+  const progs = related.filter(x => x.type === 'Progressão');
+
+  let html = '';
+  if (regs.length) {
+    html += `<div class="prog-block"><div class="prog-block-title">Regressões</div>${regs.map(r=>`<div class="prog-item" onclick="playVideo('${r.id}')" style="cursor:pointer"><span class="prog-arrow-reg">⬇</span> ${r.name}<span style="font-size:11px;color:var(--muted);margin-left:auto">mais fácil</span></div>`).join('')}</div>`;
+  }
+  if (progs.length) {
+    html += `<div class="prog-block"><div class="prog-block-title">Progressões</div>${progs.map(p=>`<div class="prog-item" onclick="playVideo('${p.id}')" style="cursor:pointer"><span class="prog-arrow-prog">⬆</span> ${p.name}<span style="font-size:11px;color:var(--muted);margin-left:auto">mais difícil</span></div>`).join('')}</div>`;
+  }
+  document.getElementById('playerProgs').innerHTML = html;
+  openModal('modalPlayer');
+}
+
+// ══════════════════════════════════════════════
+//  SHARE LINK
+// ══════════════════════════════════════════════
+function shareClient(id) {
+  state.currentClientId = id;
+  openShareModal();
+}
+
+function openShareModal() {
+  const c = state.clients.find(x => x.id === state.currentClientId);
+  if (!c) return;
+  document.getElementById('shareTitle').textContent = `Link · ${c.name}`;
+  const url = `${location.origin}${location.pathname}?t=${c.access_token}`;
+  document.getElementById('shareLinkInput').value = url;
+  openModal('modalShare');
+}
+
+function copyLink() {
+  navigator.clipboard.writeText(document.getElementById('shareLinkInput').value);
+  toast('Link copiado!');
+}
+function openWhatsApp() {
+  const url = document.getElementById('shareLinkInput').value;
+  const c = state.clients.find(x => x.id === state.currentClientId);
+  window.open(`https://wa.me/?text=Olá ${c?.name?.split(' ')[0]}! Aqui está o teu link de treinos: ${url}`);
+}
+function openEmail() {
+  const url = document.getElementById('shareLinkInput').value;
+  const c = state.clients.find(x => x.id === state.currentClientId);
+  window.open(`mailto:?subject=Os teus treinos CaliPT&body=Olá ${c?.name?.split(' ')[0]}!%0A%0AAqui está o teu link de treinos:%0A${url}`);
+}
+
+// ══════════════════════════════════════════════
+//  CLIENT PUBLIC VIEW
+// ══════════════════════════════════════════════
+async function showClientView(token) {
+  // Hide PT nav, show only client page
+  document.getElementById('topnav').innerHTML = `<div class="logo">CALI<span>PT</span></div>`;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-client').classList.add('active');
+
+  const content = document.getElementById('clientViewContent');
+  content.innerHTML = `<div class="loading"><div class="spinner"></div><span>A carregar os teus treinos...</span></div>`;
+
+  // Fetch client by token
+  const { data: clients } = await sb.from('clients').select('*').eq('access_token', token);
+  if (!clients || !clients.length) {
+    content.innerHTML = `<div class="empty"><div class="empty-icon">😕</div><div class="empty-text">Link inválido ou expirado.<br>Pede um novo link ao teu PT.</div></div>`;
+    return;
+  }
+  const client = clients[0];
+
+  // Fetch workouts + exercises
+  const { data: workouts } = await sb.from('workouts').select('*').eq('client_id', client.id).order('created_at');
+  const { data: exercises } = await sb.from('exercises').select('*').order('sort_order');
+  const { data: videos } = await sb.from('videos').select('*');
+
+  // Fetch completions
+  const workoutIds = (workouts||[]).map(w => w.id);
+  let completions = [];
+  if (workoutIds.length) {
+    const { data: comp } = await sb.from('completions').select('*').in('workout_id', workoutIds);
+    completions = comp || [];
+  }
+
+  state.videos = videos || [];
+
+  const total = (workouts||[]).length;
+  const done = (workouts||[]).filter(w => completions.some(c => c.workout_id === w.id)).length;
+  const pct = total ? Math.round((done/total)*100) : 0;
+
+  const initials = client.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+
+  content.innerHTML = `
+    <div class="client-header">
+      <div style="display:flex;align-items:center;gap:16px">
+        <div class="avatar av1" style="width:54px;height:54px;font-size:18px">${initials}</div>
+        <div>
+          <div class="client-greeting">Olá, ${client.name.split(' ')[0]}! 👋</div>
+          <div class="client-sub">${client.level || ''} · ${client.location || ''} · ${client.frequency || ''}</div>
+        </div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-label">
+          <span>Progresso</span>
+          <span>${done}/${total} treinos concluídos</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill" style="width:${pct}%"></div>
+        </div>
+      </div>
+    </div>
+    ${total === 0 ? `<div class="empty"><div class="empty-icon">🏋️</div><div class="empty-text">O teu PT ainda não adicionou treinos.<br>Fica atento!</div></div>` : ''}
+    ${(workouts||[]).map(w => {
+      const exs = (exercises||[]).filter(e => e.workout_id === w.id);
+      const isDone = completions.some(c => c.workout_id === w.id);
+      return `
+        <div class="wc-card" id="wcard-${w.id}">
+          <div class="wc-head">
+            <div style="flex:1">
+              <div class="wc-day-badge">${w.day || ''} ${w.week ? '· ' + w.week : ''}</div>
+              <div class="wc-title">${w.title}</div>
+            </div>
+            <div class="done-check ${isDone?'done':''}" id="check-${w.id}">${isDone?'✓':'○'}</div>
+          </div>
+          <div class="wc-exercises">
+            ${exs.map(ex => {
+              const vid = (videos||[]).find(v => v.name.toLowerCase() === ex.name.toLowerCase());
+              return `<div class="wc-ex-row">
+                <div class="wc-video-btn ${vid?'':''}${!vid?'style="opacity:0.3;pointer-events:none"':''}" onclick="${vid?`clientPlayVideo('${vid.id}')`:''}">${vid?'▶':'▶'}</div>
+                <div class="wc-ex-info">
+                  <div class="wc-ex-name">${ex.name}</div>
+                  <div class="wc-ex-sets">${ex.sets ? ex.sets+'×' : ''} ${ex.reps || ''} ${ex.rest ? '· '+ex.rest+' descanso' : ''}</div>
+                </div>
+              </div>`;
+            }).join('')}
+            ${w.notes ? `<div style="padding:8px 0 2px;font-size:12px;color:var(--muted);line-height:1.5;border-top:1px solid var(--border);margin-top:4px">📝 ${w.notes}</div>` : ''}
+          </div>
+          <button class="complete-btn ${isDone?'done':''}" id="cbtn-${w.id}" onclick="clientComplete('${w.id}')" ${isDone?'disabled':''}>
+            ${isDone ? '✓ Treino concluído' : 'Marcar como concluído ✓'}
+          </button>
+        </div>`;
+    }).join('')}`;
+
+  // Store completions count in state for update
+  state._clientDone = done;
+  state._clientTotal = total;
+}
+
+async function clientComplete(workoutId) {
+  const btn = document.getElementById(`cbtn-${workoutId}`);
+  const check = document.getElementById(`check-${workoutId}`);
+  btn.disabled = true;
+  btn.textContent = 'A guardar...';
+
+  const { error } = await sb.from('completions').insert({ workout_id: workoutId });
+  if (error && !error.message.includes('duplicate')) {
+    btn.disabled = false;
+    btn.textContent = 'Marcar como concluído ✓';
+    toast('Erro ao guardar', 'error');
+    return;
+  }
+
+  btn.classList.add('done');
+  btn.textContent = '✓ Treino concluído';
+  check.classList.add('done');
+  check.textContent = '✓';
+
+  state._clientDone = (state._clientDone || 0) + 1;
+  const pct = Math.round((state._clientDone / state._clientTotal) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.querySelector('.progress-label span:last-child').textContent = `${state._clientDone}/${state._clientTotal} treinos concluídos`;
+  toast('Excelente! Treino concluído 💪');
+}
+
+function clientPlayVideo(videoId) {
+  playVideo(videoId);
+}
+
+// ══════════════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════════════
+let toastTimer;
+function toast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast toast-${type} show`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
+
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#0f0f0f;--surface:#181818;--s2:#222;--s3:#2c2c2c;--s4:#363636;
