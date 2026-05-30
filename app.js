@@ -252,7 +252,7 @@ function renderBlockPT(b){
       ${timerInfo}
       ${vidBtn}
     </div>
-    <div class="block-content">${b.content||''}</div>
+    <div class="block-content">${(b.content||'').replace(/\\n/g,'\n')}</div>
   </div>`;
 }
 
@@ -596,7 +596,7 @@ function renderClientBlock(b,videos){
       ${timerBadge}
       ${vidBtn}
     </div>
-    <div class="cv-block-content">${b.content||''}</div>
+    <div class="cv-block-content">${(b.content||'').replace(/\\n/g,'\n')}</div>
     ${hasTimer?`<div class="timer-wrap">${renderTimer(b)}</div>`:''}
   </div>`;
 }
