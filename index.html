@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>CaliPT — Francisco Pinto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f0f;--s1:#181818;--s2:#202020;--s3:#2a2a2a;--s4:#343434;
+  --accent:#c8f54a;--green:#4af5a0;--yellow:#f5d44a;--red:#f54a4a;--blue:#4a9af5;
+  --text:#f0f0f0;--muted:#777;--border:rgba(255,255,255,0.07);
+  --r:12px;--fh:'Syne',sans-serif;--fb:'DM Sans',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--fb);min-height:100vh;font-size:14px}
+button{cursor:pointer;font-family:var(--fb)}
+input,select,textarea{font-family:var(--fb)}
+
+/* NAV */
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:var(--s1);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;gap:10px}
+.logo{font-family:var(--fh);font-size:19px;font-weight:800;letter-spacing:-0.5px;white-space:nowrap}
+.logo span{color:var(--accent)}
+.nav-tabs{display:flex;gap:3px}
+.nav-tab{padding:7px 14px;border-radius:8px;font-size:13px;font-weight:500;border:none;background:transparent;color:var(--muted);transition:all 0.2s}
+.nav-tab.active{background:var(--accent);color:#0f0f0f;font-weight:700}
+.nav-tab:hover:not(.active){background:var(--s2);color:var(--text)}
+
+/* PAGES */
+.page{display:none;padding:20px;max-width:900px;margin:0 auto;width:100%;animation:fi 0.2s ease}
+.page.active{display:block}
+@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+/* BUTTONS */
+.btn{padding:9px 16px;border-radius:9px;font-size:13px;font-weight:600;border:none;transition:all 0.15s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn-accent{background:var(--accent);color:#0f0f0f}
+.btn-accent:hover{background:#d4ff5a}
+.btn-ghost{background:var(--s2);color:var(--text);border:1px solid var(--border)}
+.btn-ghost:hover{background:var(--s3)}
+.btn-danger{background:rgba(245,74,74,0.1);color:var(--red);border:1px solid rgba(245,74,74,0.15)}
+.btn-danger:hover{background:rgba(245,74,74,0.2)}
+.btn-yellow{background:rgba(245,212,74,0.1);color:var(--yellow);border:1px solid rgba(245,212,74,0.2)}
+.btn-green{background:rgba(74,245,160,0.1);color:var(--green);border:1px solid rgba(74,245,160,0.2)}
+.btn-sm{padding:5px 11px;font-size:12px;border-radius:7px}
+.btn-xs{padding:3px 8px;font-size:11px;border-radius:6px}
+
+/* CARDS */
+.card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r)}
+
+/* FORMS */
+.form-group{margin-bottom:13px}
+.form-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;display:block;margin-bottom:5px}
+.form-input{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;transition:border-color 0.15s;-webkit-appearance:none}
+.form-input:focus{border-color:rgba(200,245,74,0.4)}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:300;align-items:center;justify-content:center;padding:14px;backdrop-filter:blur(4px)}
+.modal-bg.open{display:flex}
+.modal{background:var(--s1);border:1px solid var(--border);border-radius:16px;width:100%;max-width:580px;max-height:92vh;overflow-y:auto;animation:mi 0.2s ease}
+.modal-wide{max-width:700px}
+@keyframes mi{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:none}}
+.modal-head{padding:18px 20px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--s1);z-index:1}
+.modal-title{font-family:var(--fh);font-size:16px;font-weight:700}
+.modal-close{background:var(--s3);border:none;color:var(--text);width:28px;height:28px;border-radius:50%;font-size:15px;display:flex;align-items:center;justify-content:center}
+.modal-body{padding:18px 20px}
+.modal-foot{padding:13px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:var(--s1)}
+
+/* TOAST */
+.toast{position:fixed;bottom:18px;right:18px;padding:11px 18px;border-radius:10px;font-weight:600;font-size:13px;z-index:999;transform:translateY(70px);opacity:0;transition:all 0.3s;pointer-events:none;max-width:260px}
+.toast.show{transform:translateY(0);opacity:1}
+.toast-ok{background:var(--accent);color:#0f0f0f}
+.toast-err{background:var(--red);color:#fff}
+
+/* LOADING / EMPTY */
+.loading{display:flex;align-items:center;justify-content:center;padding:48px;color:var(--muted);gap:10px;flex-direction:column}
+.spinner{width:22px;height:22px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty-icon{font-size:34px;margin-bottom:10px}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px}
+.stat-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:18px;position:relative;overflow:hidden}
+.stat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent)}
+.stat-card.g::after{background:var(--green)}
+.stat-label{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:6px}
+.stat-value{font-family:var(--fh);font-size:30px;font-weight:800}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:3px}
+
+/* PAGE HEADER */
+.ph{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;gap:10px;flex-wrap:wrap}
+.ph h2{font-family:var(--fh);font-size:19px;font-weight:800}
+.ph p{font-size:12px;color:var(--muted);margin-top:3px}
+.ph-actions{display:flex;gap:7px;flex-wrap:wrap}
+
+/* CLIENT CARDS */
+.client-list{display:flex;flex-direction:column;gap:7px}
+.client-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;display:flex;align-items:center;gap:12px;transition:border-color 0.2s}
+.client-card:hover{border-color:rgba(200,245,74,0.2)}
+.avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-weight:800;font-size:13px;flex-shrink:0;border:1.5px solid var(--border)}
+.av1{background:rgba(200,245,74,0.1);color:var(--accent);border-color:rgba(200,245,74,0.2)}
+.av2{background:rgba(74,245,160,0.1);color:var(--green);border-color:rgba(74,245,160,0.2)}
+.av3{background:rgba(74,154,245,0.1);color:var(--blue);border-color:rgba(74,154,245,0.2)}
+.av4{background:rgba(245,212,74,0.1);color:var(--yellow);border-color:rgba(245,212,74,0.2)}
+.av5{background:rgba(200,74,245,0.1);color:#c84af5;border-color:rgba(200,74,245,0.2)}
+.client-info{flex:1;min-width:0}
+.client-name{font-weight:600;font-size:14px}
+.client-meta{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.client-actions{display:flex;gap:5px;flex-shrink:0;flex-wrap:wrap}
+
+/* STATUS BADGES */
+.badge{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:0.2px;white-space:nowrap}
+.badge-prep{background:rgba(255,255,255,0.06);color:var(--muted)}
+.badge-sent{background:rgba(245,212,74,0.12);color:var(--yellow)}
+.badge-done{background:rgba(74,245,160,0.12);color:var(--green)}
+
+/* WORKOUT CARDS — PT VIEW */
+.workout-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;overflow:hidden}
+.workout-card.status-sent{border-left:3px solid var(--yellow)}
+.workout-card.status-done{border-left:3px solid var(--green)}
+.workout-card.status-prep{border-left:3px solid var(--s4)}
+.wk-head{padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:background 0.15s;user-select:none}
+.wk-head:hover{background:var(--s2)}
+.wk-title{font-weight:600;font-size:14px}
+.wk-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.wk-meta{margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.chevron{color:var(--muted);font-size:13px;transition:transform 0.2s}
+.chevron.open{transform:rotate(180deg)}
+.wk-body{display:none;border-top:1px solid var(--border)}
+.wk-body.open{display:block}
+
+/* BLOCKS */
+.block-list{padding:12px 16px;display:flex;flex-direction:column;gap:10px}
+.block-item{background:var(--s2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.block-header{padding:10px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+.block-name{font-family:var(--fh);font-size:13px;font-weight:700;color:var(--accent)}
+.block-duration{font-size:11px;color:var(--muted);background:var(--s3);padding:2px 8px;border-radius:4px}
+.block-content{padding:12px 14px;font-size:13px;line-height:1.7;color:var(--text);white-space:pre-wrap;word-break:break-word}
+.block-video-btn{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--accent);background:rgba(200,245,74,0.08);padding:4px 10px;border-radius:6px;border:none;cursor:pointer;margin-left:auto;flex-shrink:0}
+.block-video-btn:hover{background:rgba(200,245,74,0.16)}
+
+/* TIMER BADGE on block */
+.timer-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;background:rgba(74,154,245,0.1);color:var(--blue);border:1px solid rgba(74,154,245,0.2)}
+
+/* WORKOUT FOOTER */
+.wk-footer{padding:10px 16px;display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px solid var(--border);flex-wrap:wrap}
+.wk-footer-left{display:flex;gap:6px;flex-wrap:wrap}
+
+/* STATUS SELECTOR */
+.status-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.status-btn{padding:5px 12px;border-radius:7px;font-size:12px;font-weight:600;border:1.5px solid transparent;cursor:pointer;transition:all 0.15s;font-family:var(--fb)}
+.status-btn.prep{background:rgba(255,255,255,0.04);color:var(--muted);border-color:var(--border)}
+.status-btn.sent{background:rgba(245,212,74,0.08);color:var(--yellow);border-color:rgba(245,212,74,0.2)}
+.status-btn.done{background:rgba(74,245,160,0.08);color:var(--green);border-color:rgba(74,245,160,0.2)}
+.status-btn.active-prep{background:rgba(255,255,255,0.1);color:var(--text);border-color:rgba(255,255,255,0.3)}
+.status-btn.active-sent{background:rgba(245,212,74,0.18);color:var(--yellow);border-color:var(--yellow)}
+.status-btn.active-done{background:rgba(74,245,160,0.18);color:var(--green);border-color:var(--green)}
+
+/* ANAMNESE */
+.ana-section{border-bottom:1px solid var(--border);margin-bottom:18px;padding-bottom:18px}
+.ana-title{font-family:var(--fh);font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px}
+.ana-sub{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin:10px 0 7px;padding-bottom:3px;border-bottom:1px solid var(--border)}
+.cb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:5px;margin-top:4px}
+.cb-label{display:flex;align-items:center;gap:7px;font-size:13px;background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:6px 10px;cursor:pointer;transition:all 0.15s;user-select:none}
+.cb-label:hover{border-color:rgba(200,245,74,0.25);background:var(--s3)}
+.cb-label input{width:13px;height:13px;accent-color:var(--accent);flex-shrink:0}
+.cb-label:has(input:checked){border-color:rgba(200,245,74,0.3);background:rgba(200,245,74,0.04)}
+
+/* VIDEOS PAGE */
+.videos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+.video-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:border-color 0.2s,transform 0.15s}
+.video-card:hover{border-color:rgba(200,245,74,0.3);transform:translateY(-2px)}
+.video-thumb{aspect-ratio:16/9;background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:28px;position:relative}
+.video-play-ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);opacity:0;transition:opacity 0.2s}
+.video-card:hover .video-play-ov{opacity:1}
+.play-circle{width:36px;height:36px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center}
+.play-tri{width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:12px solid #0f0f0f;margin-left:3px}
+.video-info{padding:10px}
+.video-name{font-weight:600;font-size:13px}
+.video-type{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* LINK BOX */
+.link-box{display:flex;gap:7px}
+.link-input{flex:1;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:8px 11px;color:var(--muted);font-size:12px;font-family:var(--fb);outline:none}
+.copy-btn{background:var(--accent);color:#0f0f0f;border:none;border-radius:8px;padding:8px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--fb)}
+
+/* ═══════════════════════════════
+   CLIENT PUBLIC VIEW
+═══════════════════════════════ */
+.cv-header{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:16px}
+.cv-greeting{font-family:var(--fh);font-size:22px;font-weight:800;margin-bottom:3px}
+.cv-sub{font-size:12px;color:var(--muted)}
+.prog-track{height:4px;background:var(--s3);border-radius:2px;overflow:hidden;margin-top:12px}
+.prog-fill{height:4px;background:var(--accent);border-radius:2px;transition:width 0.5s}
+.prog-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:5px}
+
+/* CLIENT WORKOUT CARD */
+.cwc{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);margin-bottom:12px;overflow:hidden}
+.cwc-head{padding:14px 16px;display:flex;align-items:center;gap:12px}
+.cwc-day{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:3px}
+.cwc-title{font-family:var(--fh);font-size:16px;font-weight:700}
+.done-circle{width:26px;height:26px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.25s;margin-left:auto;font-size:12px;font-weight:800}
+.done-circle.done{background:var(--green);border-color:var(--green);color:#0f0f0f}
+
+/* CLIENT BLOCKS */
+.cv-blocks{padding:0 14px 14px;display:flex;flex-direction:column;gap:10px}
+.cv-block{background:var(--s2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.cv-block-head{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cv-block-name{font-family:var(--fh);font-size:13px;font-weight:700;color:var(--accent)}
+.cv-block-dur{font-size:11px;color:var(--muted);background:var(--s3);padding:2px 7px;border-radius:4px}
+.cv-block-content{padding:12px 14px;font-size:13px;line-height:1.75;color:var(--text);white-space:pre-wrap;word-break:break-word}
+
+/* ═══════════════════════════════
+   TIMER
+═══════════════════════════════ */
+.timer-wrap{margin:0 14px 14px;background:var(--s3);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.timer-top{padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--border)}
+.timer-type-label{font-family:var(--fh);font-size:12px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:0.8px}
+.timer-info{font-size:11px;color:var(--muted)}
+.timer-display{padding:16px 14px 10px;text-align:center}
+.timer-phase{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:4px}
+.timer-phase.work{color:var(--accent)}
+.timer-phase.rest{color:var(--blue)}
+.timer-phase.countdown{color:var(--yellow)}
+.timer-clock{font-family:var(--fh);font-size:52px;font-weight:800;line-height:1;letter-spacing:-2px;transition:color 0.3s}
+.timer-clock.work{color:var(--accent)}
+.timer-clock.rest{color:var(--blue)}
+.timer-clock.countdown{color:var(--yellow)}
+.timer-rounds{font-size:12px;color:var(--muted);margin-top:4px}
+.timer-controls{padding:10px 14px 14px;display:flex;gap:8px;justify-content:center}
+.timer-btn{padding:9px 20px;border-radius:9px;font-size:13px;font-weight:700;border:none;font-family:var(--fh);transition:all 0.15s;flex:1;max-width:120px}
+.timer-btn-start{background:var(--accent);color:#0f0f0f}
+.timer-btn-start:hover{background:#d4ff5a}
+.timer-btn-pause{background:var(--yellow);color:#0f0f0f}
+.timer-btn-reset{background:var(--s4);color:var(--text)}
+.timer-btn-reset:hover{background:var(--s3)}
+
+.complete-btn{width:100%;padding:13px;background:rgba(200,245,74,0.07);border:none;border-top:1px solid var(--border);color:var(--accent);font-family:var(--fh);font-size:14px;font-weight:700;letter-spacing:0.3px;cursor:pointer;transition:all 0.2s}
+.complete-btn:hover:not(:disabled){background:rgba(200,245,74,0.14)}
+.complete-btn.done{background:rgba(74,245,160,0.07);color:var(--green);cursor:default}
+.complete-btn:disabled{opacity:0.5;cursor:default}
+
+/* BLOCK FORM */
+.block-form-item{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px}
+.block-form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.timer-config{background:var(--s3);border-radius:8px;padding:10px;margin-top:8px;display:none}
+.timer-config.show{display:block}
+.timer-type-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:8px}
+.tt-btn{padding:6px 4px;border-radius:6px;font-size:11px;font-weight:600;border:1.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;text-align:center;transition:all 0.15s;font-family:var(--fb)}
+.tt-btn.active{border-color:var(--blue);background:rgba(74,154,245,0.1);color:var(--blue)}
+
+/* VIDEO PREVIEW */
+.video-preview{background:var(--s2);border-radius:8px;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;margin-bottom:12px;overflow:hidden}
+.video-preview iframe{width:100%;height:100%;border:none}
+
+@media(max-width:580px){
+  .stats-row{grid-template-columns:1fr 1fr}
+  .stats-row .stat-card:last-child{grid-column:1/-1}
+  .nav-tab{padding:6px 9px;font-size:12px}
+  .topnav{padding:11px 14px}
+  .page{padding:12px}
+  .form-row-3{grid-template-columns:1fr 1fr}
+  .cb-grid{grid-template-columns:1fr 1fr}
+  .timer-clock{font-size:42px}
+  .client-actions{flex-wrap:wrap;gap:5px}
+  .timer-type-grid{grid-template-columns:repeat(3,1fr)}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+<nav class="topnav" id="topnav">
+  <div class="logo">CALI<span>PT</span></div>
+  <div class="nav-tabs" id="navTabs">
+    <button class="nav-tab active" data-page="dashboard">Dashboard</button>
+    <button class="nav-tab" data-page="workouts">Treinos</button>
+    <button class="nav-tab" data-page="videos">Vídeos</button>
+  </div>
+</nav>
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-label">Clientes</div><div class="stat-value" id="st-clients">—</div><div class="stat-sub">ativos</div></div>
+    <div class="stat-card g"><div class="stat-label">Treinos</div><div class="stat-value" id="st-workouts" style="color:var(--green)">—</div><div class="stat-sub">criados</div></div>
+    <div class="stat-card"><div class="stat-label">Vídeos</div><div class="stat-value" id="st-videos">—</div><div class="stat-sub">biblioteca</div></div>
+  </div>
+  <div class="ph">
+    <div><h2>Clientes</h2><p>Clica em "Ver treinos" para gerir os treinos de um cliente</p></div>
+    <button class="btn btn-accent" onclick="openNewClient()">+ Novo cliente</button>
+  </div>
+  <div id="clientsList"></div>
+</div>
+
+<!-- WORKOUTS -->
+<div class="page" id="page-workouts">
+  <div class="ph">
+    <div><h2 id="wk-title">Treinos</h2><p id="wk-sub">Seleciona um cliente</p></div>
+    <div class="ph-actions" id="wk-actions" style="display:none">
+      <button class="btn btn-ghost btn-sm" onclick="openShareModal()">🔗 Link cliente</button>
+      <button class="btn btn-accent btn-sm" onclick="openNewWorkout()">+ Novo treino</button>
+    </div>
+  </div>
+  <div id="workoutsList"></div>
+</div>
+
+<!-- VIDEOS -->
+<div class="page" id="page-videos">
+  <div class="ph">
+    <div><h2>Biblioteca de Vídeos</h2><p>Vídeos de demonstração, regressões e progressões</p></div>
+    <button class="btn btn-accent" onclick="openNewVideo()">+ Adicionar vídeo</button>
+  </div>
+  <div id="videosList"></div>
+</div>
+
+<!-- CLIENT VIEW -->
+<div class="page" id="page-client">
+  <div id="clientViewContent"></div>
+</div>
+
+</div><!-- /app -->
+
+<!-- ═══ MODALS ═══ -->
+
+<!-- CLIENT / ANAMNESE -->
+<div class="modal-bg" id="modalClient">
+<div class="modal modal-wide">
+  <div class="modal-head">
+    <div><div class="modal-title" id="modalClientTitle">Ficha de Anamnese</div><div style="font-size:11px;color:var(--muted);margin-top:1px">Francisco Pinto · Calistenia e Performance</div></div>
+    <button class="modal-close" onclick="closeModal('modalClient')">×</button>
+  </div>
+  <div class="modal-body">
+    <input type="hidden" id="cId">
+    <div class="ana-section">
+      <div class="ana-title">👤 Identificação Pessoal</div>
+      <div class="form-group"><label class="form-label">Nome completo</label><input class="form-input" id="cName" placeholder="Nome e apelido"></div>
+      <div class="form-row-2">
+        <div class="form-group"><label class="form-label">Data de nascimento</label><input class="form-input" id="cDob" type="date"></div>
+        <div class="form-group"><label class="form-label">Sexo</label><select class="form-input" id="cSex"><option value="">— Selecionar —</option><option value="M">Masculino</option><option value="F">Feminino</option></select></div>
+      </div>
+      <div class="form-group"><label class="form-label">Profissão</label><input class="form-input" id="cProf" placeholder="Ex: Enfermeira, Engenheiro..."></div>
+      <div class="form-row-2">
+        <div class="form-group"><label class="form-label">Telefone</label><input class="form-input" id="cPhone" type="tel" placeholder="+351 9xx xxx xxx"></div>
+        <div class="form-group"><label class="form-label">E-mail</label><input class="form-input" id="cEmail" type="email" placeholder="email@exemplo.com"></div>
+      </div>
+    </div>
+    <div class="ana-section">
+      <div class="ana-title">🎯 Objetivos</div>
+      <div class="form-group"><textarea class="form-input" id="cGoals" rows="3" placeholder="Objetivos do cliente — perda de peso, força, mobilidade, handstand..."></textarea></div>
+    </div>
+    <div class="ana-section">
+      <div class="ana-title">🩺 Histórico</div>
+      <div class="form-group"><label class="form-label">Lesões / Limitações físicas</label><textarea class="form-input" id="cInjuries" rows="2" placeholder="Lesões passadas ou atuais, dores crónicas, cirurgias..."></textarea></div>
+      <div class="form-group"><label class="form-label">Experiência de treino</label><textarea class="form-input" id="cExp" rows="2" placeholder="Histórico, desportos praticados, anos de experiência..."></textarea></div>
+    </div>
+    <div class="ana-section">
+      <div class="ana-title">💪 Contexto de Treino</div>
+      <div class="form-row-3">
+        <div class="form-group"><label class="form-label">Nível</label><select class="form-input" id="cLevel"><option value="Iniciante">Iniciante</option><option value="Intermédio">Intermédio</option><option value="Avançado">Avançado</option></select></div>
+        <div class="form-group"><label class="form-label">Local</label><select class="form-input" id="cLocation"><option value="Em casa">Em casa</option><option value="Ginásio / Box">Ginásio / Box</option><option value="Street Workout">Street Workout / Parque</option><option value="Online">Online (remoto)</option></select></div>
+        <div class="form-group"><label class="form-label">Frequência</label><select class="form-input" id="cFreq"><option value="1×/semana">1×/semana</option><option value="2×/semana">2×/semana</option><option value="3×/semana" selected>3×/semana</option><option value="4×/semana">4×/semana</option><option value="5×/semana">5×/semana</option><option value="Todos os dias">Todos os dias</option></select></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Material disponível</label>
+        <div class="cb-grid" id="equipGrid">
+          <label class="cb-label"><input type="checkbox" value="Barra fixa"> Barra fixa</label>
+          <label class="cb-label"><input type="checkbox" value="Paralelas / Paralletes"> Paralelas / Paralletes</label>
+          <label class="cb-label"><input type="checkbox" value="Rings / Argolas"> Rings / Argolas</label>
+          <label class="cb-label"><input type="checkbox" value="Kettlebell"> Kettlebell</label>
+          <label class="cb-label"><input type="checkbox" value="Halteres"> Halteres</label>
+          <label class="cb-label"><input type="checkbox" value="Bandas elásticas"> Bandas elásticas</label>
+          <label class="cb-label"><input type="checkbox" value="Corda de saltar"> Corda de saltar</label>
+          <label class="cb-label"><input type="checkbox" value="TRX / Suspensão"> TRX / Suspensão</label>
+          <label class="cb-label"><input type="checkbox" value="Só peso corporal"> Só peso corporal</label>
+        </div>
+        <input class="form-input" id="cEquipExtra" placeholder="Outro material..." style="margin-top:7px;font-size:13px">
+      </div>
+    </div>
+    <div class="ana-section">
+      <div class="ana-title">🤸 Testes de Avaliação Inicial</div>
+      <div class="ana-sub">Testes Dinâmicos</div>
+      <div class="form-row-3" style="grid-template-columns:1fr 1fr 1fr 1fr;gap:8px">
+        <div class="form-group"><label class="form-label">Push-up (máx. reps)</label><input class="form-input" id="tPushup" placeholder="Ex: 12"></div>
+        <div class="form-group"><label class="form-label">Pull-up (máx. reps)</label><input class="form-input" id="tPullup" placeholder="Ex: 8"></div>
+        <div class="form-group"><label class="form-label">Agachamento (máx. reps)</label><input class="form-input" id="tSquat" placeholder="Ex: 25"></div>
+        <div class="form-group"><label class="form-label">Sit-up (máx. reps)</label><input class="form-input" id="tSitup" placeholder="Ex: 20"></div>
+      </div>
+      <div class="ana-sub">Testes Estáticos</div>
+      <div class="form-row-3">
+        <div class="form-group"><label class="form-label">High Plank (hold)</label><input class="form-input" id="tPlank" placeholder="Ex: 45s"></div>
+        <div class="form-group"><label class="form-label">Hollow Body (hold)</label><input class="form-input" id="tHollow" placeholder="Ex: 20s"></div>
+        <div class="form-group"><label class="form-label">Wall Sit (hold)</label><input class="form-input" id="tWallsit" placeholder="Ex: 60s"></div>
+      </div>
+      <div class="ana-sub">Testes Cardio</div>
+      <div class="form-row-3">
+        <div class="form-group"><label class="form-label">Cooper (12 min)</label><input class="form-input" id="tCooper" placeholder="Ex: 2.4km"></div>
+        <div class="form-group"><label class="form-label">Burpees (7 min)</label><input class="form-input" id="tBurpees" placeholder="Ex: 48"></div>
+        <div class="form-group"><label class="form-label">Saltos à corda (2 min)</label><input class="form-input" id="tRope" placeholder="Ex: 120"></div>
+      </div>
+    </div>
+    <div style="margin-bottom:0">
+      <div class="ana-title">📝 Notas do PT</div>
+      <textarea class="form-input" id="cNotes" rows="2" placeholder="Observações, notas de acompanhamento..."></textarea>
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost" onclick="closeModal('modalClient')">Cancelar</button>
+    <button class="btn btn-accent" onclick="saveClient()">Guardar ficha</button>
+  </div>
+</div>
+</div>
+
+<!-- WORKOUT MODAL -->
+<div class="modal-bg" id="modalWorkout">
+<div class="modal modal-wide">
+  <div class="modal-head">
+    <div class="modal-title" id="modalWkTitle">Novo treino</div>
+    <button class="modal-close" onclick="closeModal('modalWorkout')">×</button>
+  </div>
+  <div class="modal-body">
+    <input type="hidden" id="wId">
+    <div class="form-group"><label class="form-label">Nome do treino</label><input class="form-input" id="wTitle" placeholder="Ex: Treino A — Força"></div>
+    <div class="form-row-3">
+      <div class="form-group"><label class="form-label">Dia</label><select class="form-input" id="wDay"><option>Segunda</option><option>Terça</option><option>Quarta</option><option>Quinta</option><option>Sexta</option><option>Sábado</option><option>Domingo</option></select></div>
+      <div class="form-group"><label class="form-label">Semana / Fase</label><input class="form-input" id="wWeek" placeholder="Ex: Semana 1"></div>
+      <div class="form-group"><label class="form-label">Duração total (min)</label><input class="form-input" id="wDuration" type="number" placeholder="60"></div>
+    </div>
+    <div class="form-group">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <label class="form-label" style="margin:0">Blocos do treino</label>
+        <button class="btn btn-ghost btn-xs" onclick="addBlockForm()">+ Bloco</button>
+      </div>
+      <div id="blocksFormList"></div>
+    </div>
+    <div class="form-group" style="margin-bottom:0"><label class="form-label">Notas gerais</label><textarea class="form-input" id="wNotes" rows="2" placeholder="Instruções gerais para o cliente..."></textarea></div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost" onclick="closeModal('modalWorkout')">Cancelar</button>
+    <button class="btn btn-accent" onclick="saveWorkout()">Guardar treino</button>
+  </div>
+</div>
+</div>
+
+<!-- VIDEO MODAL -->
+<div class="modal-bg" id="modalVideo">
+<div class="modal">
+  <div class="modal-head">
+    <div class="modal-title">Adicionar vídeo</div>
+    <button class="modal-close" onclick="closeModal('modalVideo')">×</button>
+  </div>
+  <div class="modal-body">
+    <input type="hidden" id="vId">
+    <div class="form-group"><label class="form-label">Nome do exercício</label><input class="form-input" id="vName" placeholder="Ex: Push-up, Squat, L-sit..."></div>
+    <div class="form-row-2">
+      <div class="form-group"><label class="form-label">Tipo</label><select class="form-input" id="vType"><option value="Demonstração">Demonstração principal</option><option value="Regressão">Regressão (mais fácil)</option><option value="Progressão">Progressão (mais difícil)</option><option value="Erros comuns">Erros comuns</option></select></div>
+      <div class="form-group"><label class="form-label">Exercício base (se reg/prog)</label><input class="form-input" id="vBase" placeholder="Ex: Push-up"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Link do vídeo (YouTube, Drive…)</label><input class="form-input" id="vUrl" placeholder="https://youtube.com/watch?v=..."></div>
+    <div class="form-group" style="margin-bottom:0"><label class="form-label">Notas / Dicas de execução</label><textarea class="form-input" id="vNotes" rows="3" placeholder="Pontos-chave de técnica, erros a evitar..."></textarea></div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost" onclick="closeModal('modalVideo')">Cancelar</button>
+    <button class="btn btn-accent" onclick="saveVideo()">Guardar vídeo</button>
+  </div>
+</div>
+</div>
+
+<!-- VIDEO PLAYER -->
+<div class="modal-bg" id="modalPlayer">
+<div class="modal" style="max-width:620px">
+  <div class="modal-head">
+    <div class="modal-title" id="playerTitle">—</div>
+    <button class="modal-close" onclick="closeModal('modalPlayer')">×</button>
+  </div>
+  <div class="modal-body">
+    <div class="video-preview" id="playerPreview"></div>
+    <div id="playerNotes" style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:12px"></div>
+    <div id="playerProgs"></div>
+  </div>
+</div>
+</div>
+
+<!-- SHARE MODAL -->
+<div class="modal-bg" id="modalShare">
+<div class="modal" style="max-width:440px">
+  <div class="modal-head">
+    <div class="modal-title" id="shareTitle">Link do cliente</div>
+    <button class="modal-close" onclick="closeModal('modalShare')">×</button>
+  </div>
+  <div class="modal-body">
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6">O cliente abre este link no browser e vê os treinos marcados como "Enviado". Pode ver os vídeos e marcar como concluído — sem conta, sem registo.</p>
+    <div class="form-group"><label class="form-label">Link de acesso</label>
+      <div class="link-box"><input class="link-input" id="shareLinkInput" readonly><button class="copy-btn" onclick="copyLink()">Copiar</button></div>
+    </div>
+    <div style="display:flex;gap:7px;margin-top:4px">
+      <button class="btn btn-ghost" style="flex:1" onclick="openWhatsApp()">💬 WhatsApp</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="openEmail()">✉️ Email</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+
+</body>
+</html>
