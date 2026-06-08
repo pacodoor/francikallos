@@ -962,7 +962,7 @@ function renderWorkouts(){
    html += Object.entries(byYear)
   .sort((a, b) => Number(b[0]) - Number(a[0]))
   .map(([year, groups]) => {
-    const yKey = `y${year}`;
+    const yKey = "y" + year;
 
     return `
       <div style="margin-top:18px">
