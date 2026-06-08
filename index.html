@@ -961,7 +961,7 @@ function renderWorkouts(){
     });
     html+=Object.entries(byYear).sort((a,b)=>b[0]-a[0]).map(([year,groups])=>{
       const yKey="y"+year;
-      return `<div ;style="margin-top:18px">
+      return `<div style="margin-top:18px">
         <div onclick="toggleGroup('${yKey}')" style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:8px 4px;user-select:none">
           <div style="flex:1;height:1px;background:var(--border)"></div>
           <span style="font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap">${year}</span>
