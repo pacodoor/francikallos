@@ -959,34 +959,78 @@ function renderWorkouts(){
       if(!byYear[g.year])byYear[g.year]=[];
       byYear[g.year].push(g);
     });
-    html+=Object.entries(byYear).sort((a,b)=>b[0]-a[0]).map(([year,groups])=>{
-      const yKey="y"+year;
-      return `<div style="margin-top:18px">
-        <div onclick="toggleGroup('${yKey}')" style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:8px 4px;user-select:none">
+   html += Object.entries(byYear)
+  .sort((a, b) => Number(b[0]) - Number(a[0]))
+  .map(([year, groups]) => {
+    const yKey = `y${year}`;
+
+    return `
+      <div style="margin-top:18px">
+        <div
+          onclick="toggleGroup('${yKey}')"
+          style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:8px 4px;user-select:none"
+        >
           <div style="flex:1;height:1px;background:var(--border)"></div>
-          <span style="font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap">${year}</span>
+          <span style="font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap">
+            ${year}
+          </span>
           <div style="flex:1;height:1px;background:var(--border)"></div>
-          <span id="chev-${yKey}" style="color:var(--muted);font-size:12px;transition:transform 0.2s">&#8964;</span>
+          <span
+            id="chev-${yKey}"
+            style="color:var(--muted);font-size:12px;transition:transform 0.2s"
+          >
+            &#8964;
+          </span>
         </div>
+
         <div id="grp-${yKey}" style="display:none">
-          ${groups.map(g=>{
-            const mKey="m"+year+(g.month||"").replace(/ /g,"");
-            return `<div style="margin-bottom:8px">
-              <div onclick="toggleGroup('${mKey}')" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 4px 6px 12px;user-select:none">
-                <span style="font-size:11px;font-weight:600;color:var(--accent);text-transform:capitalize">${g.month}</span>
-                <div style="flex:1;height:1px;background:var(--border)"></div>
-                <span style="font-size:10px;color:var(--muted)">${g.wks.length} treino${g.wks.length>1?"s":""}</span>
-                <span id="chev-${mKey}" style="color:var(--muted);font-size:11px;transition:transform 0.2s">&#8964;</span>
-              </div>
-              <div id="grp-${mKey}" style="display:none">
-                ${g.wks.map(w=>renderWkCard(w)).join("")}
-              </div>
-            </div>`;
-          }).join("")}
+          ${groups
+            .map((g) => {
+              const safeMonth = (g.month || "")
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/\s+/g, "");
+
+              const mKey = `m${year}${safeMonth}`;
+
+              return `
+                <div style="margin-bottom:8px">
+                  <div
+                    onclick="toggleGroup('${mKey}')"
+                    style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 4px 6px 12px;user-select:none"
+                  >
+                    <span
+                      style="font-size:11px;font-weight:600;color:var(--accent);text-transform:capitalize"
+                    >
+                      ${g.month}
+                    </span>
+
+                    <div style="flex:1;height:1px;background:var(--border)"></div>
+
+                    <span style="font-size:10px;color:var(--muted)">
+                      ${g.wks.length} treino${g.wks.length > 1 ? "s" : ""}
+                    </span>
+
+                    <span
+                      id="chev-${mKey}"
+                      style="color:var(--muted);font-size:11px;transition:transform 0.2s"
+                    >
+                      &#8964;
+                    </span>
+                  </div>
+
+                  <div id="grp-${mKey}" style="display:none">
+                    ${g.wks.map((w) => renderWkCard(w)).join("")}
+                  </div>
+                </div>
+              `;
+            })
+            .join("")}
         </div>
-      </div>`;
-    }).join("");
-  }
+      </div>
+    `;
+  })
+  .join("");
 
   el.innerHTML=html;
 }
