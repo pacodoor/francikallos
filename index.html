@@ -1455,7 +1455,12 @@ async function showClientView(token){
 
 function renderClientBlock(b,videos){
   _blockRegistry[b.id]=b;
-  const hasTimer=b.timer_type&&b.timer_type!=='none';
+
+  const hasTimer = b.timer_type && b.timer_type !== 'none';
+
+  const timerBadge = hasTimer
+    ? `<span class="timer-badge">${(b.timer_type || '').toUpperCase()}</span>`
+    : '';
   const vidBtn=b.video_url?'<button class="block-video-btn" onclick="playUrl(\''+b.video_url+'\',\''+b.name+'\')">&gt; Video</button>':'';
   return `<div class="cv-block">
     <div class="cv-block-head">
