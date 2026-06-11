@@ -1824,7 +1824,7 @@ async function ptDeleteScore(id){
 }
 
 function notifyPTWhatsApp(clientName, workoutTitle){
-  const msg=encodeURIComponent('Ola Francisco! Acabei o treino: '(Colocar nome do treino)' ✓');
+  const msg=encodeURIComponent('Ola Francisco! Acabei o treino: 'Colocar nome do treino' ✓');
   // PT WhatsApp number - replace with your number (country code + number, no spaces or +)
   const ptNumber='351XXXXXXXXX';
   window.open('https://wa.me/'+ptNumber+'?text='+msg,'_blank');
@@ -1859,7 +1859,7 @@ async function editScore(blockId, workoutId, scoreId, clientId){
 function notifyPT(clientName, workoutTitle){
   // PT WhatsApp number - update this with your number
   const ptPhone='351919060297';
-  const msg=encodeURIComponent('Ola! Acabei o treino: '(Colocar nome do treino)' ✓');
+  const msg=encodeURIComponent('Ola! Acabei o treino: 'Colocar nome do treino' ✓');
   window.open('https://wa.me/'+ptPhone+'?text='+msg,'_blank');
 }
 
