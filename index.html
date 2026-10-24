@@ -1591,6 +1591,7 @@ document.querySelectorAll('.modal-bg').forEach(m=>{m.addEventListener('click',e=
 let _tt;
 function toast(msg,type='ok'){
   const el=document.getElementById('toast');
+  if(!el){console.warn('Notificação:',msg);return;}
   el.textContent=msg;el.className=`toast toast-${type} show`;
   clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('show'),2800);
 }
@@ -4598,19 +4599,22 @@ async function attachPendingIntake(id){
   const {error}=await sb.rpc('attach_pending_intake_existing',{p_id:id});
   if(error)throw error;
   document.getElementById('pendingReviewOverlay')?.remove();
-  await loadAll();renderDashboard();toast('Avaliação associada à ficha existente!');
+  S.pendingIntakes=S.pendingIntakes.filter(item=>item.id!==id);
+  renderPendingIntakes();
+  toast('Avaliação associada à ficha existente!');
+  refreshPendingIntakes().catch(e=>console.warn('Atualização das avaliações:',e));
  }catch(e){document.getElementById('pendingReviewOverlay')?.remove();toast('Não foi possível associar: '+e.message,'err');alert('Erro ao associar avaliação: '+e.message);}
 }
 async function approvePendingIntake(id){
  const x=(S.pendingIntakes||[]).find(z=>z.id===id);if(!x||!confirm('Criar e ativar a ficha de '+x.full_name+'?'))return;
- try{const {error}=await sb.rpc('approve_pending_client_intake',{p_id:id});if(error)throw error;document.getElementById('pendingReviewOverlay')?.remove();await loadAll();renderDashboard();toast('Cliente aprovado e ativado!');}
+ try{const {error}=await sb.rpc('approve_pending_client_intake',{p_id:id});if(error)throw error;document.getElementById('pendingReviewOverlay')?.remove();S.pendingIntakes=S.pendingIntakes.filter(item=>item.id!==id);renderPendingIntakes();toast('Cliente aprovado e ativado!');refreshPendingIntakes().catch(e=>console.warn('Atualização das avaliações:',e));}
  catch(e){document.getElementById('pendingReviewOverlay')?.remove();toast('Não foi possível aprovar: '+e.message,'err');alert('Erro ao aprovar avaliação: '+e.message);}
 }
 async function rejectPendingIntake(id){
  if(!confirm('Rejeitar esta avaliação? A resposta ficará guardada no histórico.'))return;
  const {error}=await sb.from('pending_client_intakes').update({status:'rejected',reviewed_at:new Date().toISOString()}).eq('id',id).eq('status','pending');
  if(error){toast('Erro ao rejeitar: '+error.message,'err');return}
- document.getElementById('pendingReviewOverlay')?.remove();await loadAll();renderDashboard();toast('Avaliação rejeitada e arquivada.');
+ document.getElementById('pendingReviewOverlay')?.remove();S.pendingIntakes=S.pendingIntakes.filter(item=>item.id!==id);renderPendingIntakes();toast('Avaliação rejeitada e arquivada.');refreshPendingIntakes().catch(e=>console.warn('Atualização das avaliações:',e));
 }
 
 </script>
