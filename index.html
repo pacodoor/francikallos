@@ -2016,7 +2016,7 @@ function viewClientProfile(id){
    if(comparable(av)===comparable(bv))matches++;
    else conflicts++;
   }
-  return matches>=5&&conflicts===0;
+  return matches>=8&&conflicts<=2;
  };
  const unique=[];
  for(const x of intakes){
