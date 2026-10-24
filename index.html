@@ -4571,7 +4571,7 @@ function reviewPendingIntake(id){
  ];
  const used=new Set(sections.flatMap(s=>s[1]));
  const extras=Object.keys(a).filter(k=>!used.has(k));
- const html=sections.concat(extras.length?[['Outras respostas',extras]]:[]).map(([title,keys])=>'<h3 style="margin:16px 0 8px;font-size:14px;color:var(--green)">'+escapeHtml(title)+'</h3>'+keys.filter(k=>a[k]!==undefined).map(k=>'<div style="margin-bottom:9px;padding:9px;border-radius:7px;background:var(--s2)"><div style="font-size:11px;color:var(--muted)">'+escapeHtml(k)+'</div><div style="margin-top:3px">'+pendingAnswer(a[k])+'</div></div>').join('')).join('');
+ const html=sections.concat(extras.length?[['Outras respostas',extras]]:[]).map(([title,keys])=>'<h3 style="margin:16px 0 8px;font-size:14px;color:var(--green)">'+escapeHtml(title)+'</h3>'+keys.map(k=>'<div style="margin-bottom:9px;padding:9px;border-radius:7px;background:var(--s2)"><div style="font-size:11px;color:var(--muted)">'+escapeHtml(k)+'</div><div style="margin-top:3px">'+pendingAnswer(a[k])+'</div></div>').join('')).join('');
  let overlay=document.getElementById('pendingReviewOverlay');
  if(!overlay){overlay=document.createElement('div');overlay.id='pendingReviewOverlay';document.body.appendChild(overlay)}
  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.86);z-index:9999;overflow:auto;padding:18px';
