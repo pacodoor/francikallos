@@ -635,6 +635,7 @@ input,select,textarea{font-family:var(--fb)}
     <div class="stat-card g"><div class="stat-label">Novos concluídos</div><div class="stat-value" id="st-new-completions" style="color:var(--green)">0</div><div class="stat-sub">desde a última visita</div></div>
   </div>
   <div id="newCompletionsPanel"></div>
+  <section id="pendingIntakesPanel" style="margin:14px 0"></section>
 
   <section class="dashboard-workspace" id="dashboardWorkspace">
     <div class="dashboard-workspace-head">
@@ -1177,7 +1178,21 @@ class Q {
   }
   then(res,rej){return this.run().then(res,rej);}
 }
-const sb={from:t=>new Q(t)};
+async function callPTRpc(name,args={}){
+ const endpoint=SURL+'/rest/v1/rpc/'+encodeURIComponent(name);
+ for(let attempt=0;attempt<2;attempt++){
+  try{
+   const response=await fetch(endpoint,{method:'POST',headers:{...SH,'Prefer':'return=representation'},body:JSON.stringify(args)});
+   const raw=await response.text();
+   let data=null;try{data=raw?JSON.parse(raw):null}catch{data=raw}
+   if(response.status===401&&PT_USER&&attempt===0){await refreshPTSession(true);continue;}
+   if(!response.ok)return{data:null,error:{message:(data&&typeof data==='object'&&(data.message||data.hint||data.error))||'HTTP '+response.status}};
+   return{data,error:null};
+  }catch(e){return{data:null,error:{message:e.message||'Erro de ligação'}};}
+ }
+ return{data:null,error:{message:'Sessão expirada. Inicia sessão novamente.'}};
+}
+const sb={from:t=>new Q(t),rpc:callPTRpc};
 async function touchClientAccess(token){
   try{await fetch(SURL+'/rest/v1/rpc/touch_client_access',{method:'POST',headers:{'Content-Type':'application/json','apikey':SKEY,'Authorization':'Bearer '+SKEY},body:JSON.stringify({p_token:token})});}catch(e){}
 }
@@ -1279,7 +1294,7 @@ function logoutPT(){
 // ==============================
 //  STATE
 // ==============================
-const S={clients:[],clientIntakes:[],workouts:[],blocks:[],videos:[],completions:[],scores:[],exerciseLibrary:[],currentClientId:null,clientFilter:'active'};
+const S={pendingIntakes:[],clients:[],clientIntakes:[],workouts:[],blocks:[],videos:[],completions:[],scores:[],exerciseLibrary:[],currentClientId:null,clientFilter:'active'};
 const _blockRegistry={};
 
 // ── POLLING — check new completions every 60s ──
@@ -1465,7 +1480,7 @@ function setupNav(){
 }
 
 async function loadAll(){
-  const [c,intakes,w,b,v,comp,scores,exlib]=await Promise.all([
+  const [c,intakes,w,b,v,comp,scores,exlib,pending]=await Promise.all([
     sb.from('clients').select('*').order('created_at'),
     sb.from('client_intakes').select('*').order('submitted_at',{ascending:false}),
     sb.from('workouts').select('*').order('created_at'),
@@ -1474,8 +1489,9 @@ async function loadAll(){
     sb.from('completions').select('*').order('completed_at',{ascending:false}),
     sb.from('scores').select('*').order('recorded_at',{ascending:false}),
     sb.from('exercise_library').select('*').order('name'),
+    sb.from('pending_client_intakes').select('*').order('received_at',{ascending:false}),
   ]);
-  S.clients=c.data||[];S.clientIntakes=intakes.data||[];S.workouts=w.data||[];S.blocks=b.data||[];S.videos=v.data||[];S.completions=comp.data||[];S.scores=scores.data||[];S.exerciseLibrary=exlib.data||[];
+  S.pendingIntakes=pending.data||[];S.clients=c.data||[];S.clientIntakes=intakes.data||[];S.workouts=w.data||[];S.blocks=b.data||[];S.videos=v.data||[];S.completions=comp.data||[];S.scores=scores.data||[];S.exerciseLibrary=exlib.data||[];
   await applyExerciseLibraryMigrations();
   applyCompletionStatus();
   updateNewBadge(unseenCompletions(S.completions));
@@ -1575,6 +1591,7 @@ document.querySelectorAll('.modal-bg').forEach(m=>{m.addEventListener('click',e=
 let _tt;
 function toast(msg,type='ok'){
   const el=document.getElementById('toast');
+  if(!el){console.warn('Notificação:',msg);return;}
   el.textContent=msg;el.className=`toast toast-${type} show`;
   clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('show'),2800);
 }
@@ -1781,6 +1798,7 @@ function renderDashboardWorkspace(){
 function renderDashboard(){
   const stNew=document.getElementById('st-new-completions');if(stNew)stNew.textContent=_newCount;
   renderDashboardWorkspace();
+  renderPendingIntakes();
   renderNotifStatus();
   renderNewCompletionsPanel();
   const stClients=document.getElementById('st-clients');if(stClients)stClients.textContent=S.clients.filter(isActiveClient).length;
@@ -4536,6 +4554,68 @@ async function confirmClientComplete(){
   }
 }
 
+
+
+async function refreshPendingIntakes(){
+ const {data,error}=await sb.from('pending_client_intakes').select('*').order('received_at',{ascending:false});
+ if(error){toast('Erro ao atualizar avaliações: '+error.message,'err');return;}
+ S.pendingIntakes=data||[];renderPendingIntakes();toast('Avaliações atualizadas.');
+}
+function pendingAnswer(value){
+  if(value===null||value===undefined||value==='')return '—';
+  return escapeHtml(Array.isArray(value)?value.join(', '):String(value));
+}
+function renderPendingIntakes(){
+ const host=document.getElementById('pendingIntakesPanel');if(!host)return;
+ const rows=(S.pendingIntakes||[]).filter(x=>x.status==='pending');
+ host.innerHTML='<div style="padding:15px;border:1px solid var(--border);border-radius:12px;background:var(--s1)"><div style="font-family:var(--fh);font-weight:700;font-size:16px;margin-bottom:10px">Avaliações por validar ('+rows.length+')</div><button class="btn btn-ghost btn-sm" style="margin-bottom:10px" onclick="refreshPendingIntakes()">↻ Atualizar avaliações</button>'+
+ (rows.length?rows.map(x=>'<div style="padding:12px;border:1px solid var(--border);border-radius:9px;margin:9px 0"><div style="font-weight:700">'+escapeHtml(x.full_name)+'</div><div style="font-size:12px;color:var(--muted);margin:5px 0">'+escapeHtml(x.email)+' · '+(x.submitted_at?new Date(x.submitted_at).toLocaleDateString('pt-PT'):'—')+'</div><button class="btn btn-accent btn-sm" onclick="reviewPendingIntake(\''+x.id+'\')">Rever avaliação</button></div>').join(''):'<div style="color:var(--muted)">Sem novas avaliações pendentes.</div>')+'</div>';
+}
+function reviewPendingIntake(id){
+ const x=(S.pendingIntakes||[]).find(z=>z.id===id);if(!x)return;
+ const a=x.answers||{};
+ const existing=(S.clients||[]).filter(y=>String(y.email||'').trim().toLowerCase()===String(x.email||'').trim().toLowerCase());
+ const isExisting=existing.length===1;
+ const duplicateEmail=existing.length>1;
+ const sections=[
+ ['Dados pessoais',['Nome completo','E-mail','Contacto telefónico','Data de nascimento','Profissão','Como é o teu dia de trabalho?']],
+ ['Dados físicos',['Altura (cm)','Peso (kg)']],
+ ['Objetivos e disponibilidade',['Qual é o teu principal objetivo?','Existe algum resultado específico que gostarias de alcançar?','Praticas atualmente exercício físico?','Quantas vezes por semana consegues realmente treinar?','Quanto tempo tens disponível por treino?','Onde vais treinar e que material tens disponível?']],
+ ['Saúde e segurança',['Tens atualmente alguma lesão, dor ou limitação física?','Explica resumidamente onde sentes o problema e que movimentos te incomodam.','Tens alguma condição médica, problema cardíaco, tensão arterial elevada, dificuldade respiratória ou outra situação que possa influenciar o exercício?','Tomas medicação ou recebeste alguma recomendação médica relacionada com a prática de exercício?','Explica brevemente a condição, medicação ou recomendação.']],
+ ['Preferências e compromisso',['Qual será o teu maior obstáculo para manter a consistência?','Qual é o teu nível de compromisso neste momento?']]
+ ];
+ const used=new Set(sections.flatMap(s=>s[1]));
+ const extras=Object.keys(a).filter(k=>!used.has(k));
+ const html=sections.concat(extras.length?[['Outras respostas',extras]]:[]).map(([title,keys])=>'<h3 style="margin:16px 0 8px;font-size:14px;color:var(--green)">'+escapeHtml(title)+'</h3>'+keys.map(k=>'<div style="margin-bottom:9px;padding:9px;border-radius:7px;background:var(--s2)"><div style="font-size:11px;color:var(--muted)">'+escapeHtml(k)+'</div><div style="margin-top:3px">'+pendingAnswer(a[k])+'</div></div>').join('')).join('');
+ let overlay=document.getElementById('pendingReviewOverlay');
+ if(!overlay){overlay=document.createElement('div');overlay.id='pendingReviewOverlay';document.body.appendChild(overlay)}
+ overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.86);z-index:9999;overflow:auto;padding:18px';
+ overlay.innerHTML='<div style="max-width:680px;margin:0 auto;background:var(--s1);padding:22px;border-radius:14px;border:1px solid var(--border)"><button class="btn btn-ghost btn-sm" onclick="document.getElementById(\'pendingReviewOverlay\').remove()">Fechar</button><h2 style="margin:15px 0">Avaliação inicial — '+escapeHtml(x.full_name)+'</h2><p style="color:var(--muted)">Confirma as respostas e escolhe a forma de associar esta avaliação. Não são alterados dados de clientes existentes.</p>'+(isExisting?'<p style="color:var(--yellow);font-weight:700">Já existe uma ficha com este e-mail: '+escapeHtml(existing[0].name)+'. A avaliação será associada sem alterar a ficha ou os treinos.</p>':duplicateEmail?'<p style="color:var(--yellow)">Existem várias fichas com este e-mail. Corrige a duplicação antes de aprovar.</p>':'')+html+'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:18px">'+(isExisting?'<button class="btn btn-green" onclick="attachPendingIntake(\''+x.id+'\')">Associar à ficha existente</button>':duplicateEmail?'':'<button class="btn btn-green" onclick="approvePendingIntake(\''+x.id+'\')">Aprovar e criar cliente</button>')+'<button class="btn btn-danger" onclick="rejectPendingIntake(\''+x.id+'\')">Rejeitar avaliação</button></div></div>';
+}
+async function attachPendingIntake(id){
+ const x=(S.pendingIntakes||[]).find(z=>z.id===id);
+ if(!x||!confirm('Associar esta avaliação à ficha existente, sem alterar os dados e treinos do cliente?'))return;
+ try{
+  const {error}=await sb.rpc('attach_pending_intake_existing',{p_id:id});
+  if(error)throw error;
+  document.getElementById('pendingReviewOverlay')?.remove();
+  S.pendingIntakes=S.pendingIntakes.filter(item=>item.id!==id);
+  renderPendingIntakes();
+  toast('Avaliação associada à ficha existente!');
+  refreshPendingIntakes().catch(e=>console.warn('Atualização das avaliações:',e));
+ }catch(e){document.getElementById('pendingReviewOverlay')?.remove();toast('Não foi possível associar: '+e.message,'err');alert('Erro ao associar avaliação: '+e.message);}
+}
+async function approvePendingIntake(id){
+ const x=(S.pendingIntakes||[]).find(z=>z.id===id);if(!x||!confirm('Criar e ativar a ficha de '+x.full_name+'?'))return;
+ try{const {error}=await sb.rpc('approve_pending_client_intake',{p_id:id});if(error)throw error;document.getElementById('pendingReviewOverlay')?.remove();S.pendingIntakes=S.pendingIntakes.filter(item=>item.id!==id);renderPendingIntakes();toast('Cliente aprovado e ativado!');refreshPendingIntakes().catch(e=>console.warn('Atualização das avaliações:',e));}
+ catch(e){document.getElementById('pendingReviewOverlay')?.remove();toast('Não foi possível aprovar: '+e.message,'err');alert('Erro ao aprovar avaliação: '+e.message);}
+}
+async function rejectPendingIntake(id){
+ if(!confirm('Rejeitar esta avaliação? A resposta ficará guardada no histórico.'))return;
+ const {error}=await sb.from('pending_client_intakes').update({status:'rejected',reviewed_at:new Date().toISOString()}).eq('id',id).eq('status','pending');
+ if(error){toast('Erro ao rejeitar: '+error.message,'err');return}
+ document.getElementById('pendingReviewOverlay')?.remove();S.pendingIntakes=S.pendingIntakes.filter(item=>item.id!==id);renderPendingIntakes();toast('Avaliação rejeitada e arquivada.');refreshPendingIntakes().catch(e=>console.warn('Atualização das avaliações:',e));
+}
 
 </script>
 
