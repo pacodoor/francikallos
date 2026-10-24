@@ -2004,6 +2004,7 @@ function viewClientProfile(id){
  const rows=a=>'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px">'+a.map(([k,v])=>'<div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px"><div style="font-size:11px;color:var(--muted)">'+esc(k)+'</div><div style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px">'+esc(v)+'</div></div>').join('')+'</div>';
  const section=(title,a)=>'<section style="margin:18px 0"><h3 style="color:var(--green);font-size:14px">'+esc(title)+'</h3>'+rows(a)+'</section>';
  const intakes=(S.clientIntakes||[]).filter(x=>x.client_id===id).sort((a,b)=>new Date(b.submitted_at||0)-new Date(a.submitted_at||0));
+ const comparable=v=>clean(v).toLocaleLowerCase('pt-PT').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
  const sameEvaluation=(a,b)=>{
   const da=a.submitted_at?new Date(a.submitted_at).toISOString().slice(0,10):'';
   const db=b.submitted_at?new Date(b.submitted_at).toISOString().slice(0,10):'';
@@ -2012,7 +2013,7 @@ function viewClientProfile(id){
   for(const [label,key] of intakeFields){
    const av=clean(a[key]),bv=clean(b[key]);
    if(av==='—'||bv==='—')continue;
-   if(av.toLocaleLowerCase('pt-PT')===bv.toLocaleLowerCase('pt-PT'))matches++;
+   if(comparable(av)===comparable(bv))matches++;
    else conflicts++;
   }
   return matches>=5&&conflicts===0;
@@ -2020,10 +2021,11 @@ function viewClientProfile(id){
  const unique=[];
  for(const x of intakes){
   const ix=unique.findIndex(y=>sameEvaluation(x,y));
-  if(ix<0)unique.push(x);
+  if(ix<0)unique.push({...x});
   else{
-   const filled=z=>intakeFields.filter(([label,key])=>clean(z[key])!=='—').length;
-   if(filled(x)>filled(unique[ix]))unique[ix]=x;
+   for(const [label,key] of intakeFields){
+    if(clean(unique[ix][key])==='—'&&clean(x[key])!=='—')unique[ix][key]=x[key];
+   }
   }
  }
  const history=unique.length?unique.map((x,i)=>'<details '+(i===0?'open':'')+' style="border:1px solid var(--border);border-radius:8px;padding:12px;margin:8px 0"><summary style="cursor:pointer">Avaliação de '+esc(x.submitted_at?new Date(x.submitted_at).toLocaleDateString('pt-PT'):'data não indicada')+'</summary>'+rows(intakeFields.map(([label,key])=>[label,x[key]]))+'</details>').join(''):'<p style="color:var(--muted)">Sem avaliações importadas.</p>';
