@@ -4541,6 +4541,11 @@ async function confirmClientComplete(){
 
 
 
+async function refreshPendingIntakes(){
+ const {data,error}=await sb.from('pending_client_intakes').select('*').order('received_at',{ascending:false});
+ if(error){toast('Erro ao atualizar avaliações: '+error.message,'err');return;}
+ S.pendingIntakes=data||[];renderPendingIntakes();toast('Avaliações atualizadas.');
+}
 function pendingAnswer(value){
   if(value===null||value===undefined||value==='')return '—';
   return escapeHtml(Array.isArray(value)?value.join(', '):String(value));
@@ -4548,7 +4553,7 @@ function pendingAnswer(value){
 function renderPendingIntakes(){
  const host=document.getElementById('pendingIntakesPanel');if(!host)return;
  const rows=(S.pendingIntakes||[]).filter(x=>x.status==='pending');
- host.innerHTML='<div style="padding:15px;border:1px solid var(--border);border-radius:12px;background:var(--s1)"><div style="font-family:var(--fh);font-weight:700;font-size:16px;margin-bottom:10px">Avaliações por validar ('+rows.length+')</div>'+
+ host.innerHTML='<div style="padding:15px;border:1px solid var(--border);border-radius:12px;background:var(--s1)"><div style="font-family:var(--fh);font-weight:700;font-size:16px;margin-bottom:10px">Avaliações por validar ('+rows.length+')</div><button class="btn btn-ghost btn-sm" style="margin-bottom:10px" onclick="refreshPendingIntakes()">↻ Atualizar avaliações</button>'+
  (rows.length?rows.map(x=>'<div style="padding:12px;border:1px solid var(--border);border-radius:9px;margin:9px 0"><div style="font-weight:700">'+escapeHtml(x.full_name)+'</div><div style="font-size:12px;color:var(--muted);margin:5px 0">'+escapeHtml(x.email)+' · '+(x.submitted_at?new Date(x.submitted_at).toLocaleDateString('pt-PT'):'—')+'</div><button class="btn btn-accent btn-sm" onclick="reviewPendingIntake(\''+x.id+'\')">Rever avaliação</button></div>').join(''):'<div style="color:var(--muted)">Sem novas avaliações pendentes.</div>')+'</div>';
 }
 function reviewPendingIntake(id){
