@@ -4559,6 +4559,9 @@ function renderPendingIntakes(){
 function reviewPendingIntake(id){
  const x=(S.pendingIntakes||[]).find(z=>z.id===id);if(!x)return;
  const a=x.answers||{};
+ const existing=(S.clients||[]).filter(y=>String(y.email||'').trim().toLowerCase()===String(x.email||'').trim().toLowerCase());
+ const isExisting=existing.length===1;
+ const duplicateEmail=existing.length>1;
  const sections=[
  ['Dados pessoais',['Nome completo','E-mail','Contacto telefónico','Data de nascimento','Profissão','Como é o teu dia de trabalho?']],
  ['Dados físicos',['Altura (cm)','Peso (kg)']],
@@ -4572,7 +4575,17 @@ function reviewPendingIntake(id){
  let overlay=document.getElementById('pendingReviewOverlay');
  if(!overlay){overlay=document.createElement('div');overlay.id='pendingReviewOverlay';document.body.appendChild(overlay)}
  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.86);z-index:9999;overflow:auto;padding:18px';
- overlay.innerHTML='<div style="max-width:680px;margin:0 auto;background:var(--s1);padding:22px;border-radius:14px;border:1px solid var(--border)"><button class="btn btn-ghost btn-sm" onclick="document.getElementById(\'pendingReviewOverlay\').remove()">Fechar</button><h2 style="margin:15px 0">Avaliação inicial — '+escapeHtml(x.full_name)+'</h2><p style="color:var(--muted)">Confirma os dados antes de criar e ativar o cliente. Uma avaliação com email já existente não será importada automaticamente.</p>'+html+'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:18px"><button class="btn btn-green" onclick="approvePendingIntake(\''+x.id+'\')">Aprovar e ativar cliente</button><button class="btn btn-danger" onclick="rejectPendingIntake(\''+x.id+'\')">Rejeitar avaliação</button></div></div>';
+ overlay.innerHTML='<div style="max-width:680px;margin:0 auto;background:var(--s1);padding:22px;border-radius:14px;border:1px solid var(--border)"><button class="btn btn-ghost btn-sm" onclick="document.getElementById(\'pendingReviewOverlay\').remove()">Fechar</button><h2 style="margin:15px 0">Avaliação inicial — '+escapeHtml(x.full_name)+'</h2><p style="color:var(--muted)">Confirma as respostas e escolhe a forma de associar esta avaliação. Não são alterados dados de clientes existentes.</p>'+(isExisting?'<p style="color:var(--yellow);font-weight:700">Já existe uma ficha com este e-mail: '+escapeHtml(existing[0].name)+'. A avaliação será associada sem alterar a ficha ou os treinos.</p>':duplicateEmail?'<p style="color:var(--yellow)">Existem várias fichas com este e-mail. Corrige a duplicação antes de aprovar.</p>':'')+html+'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:18px">'+(isExisting?'<button class="btn btn-green" onclick="attachPendingIntake(\''+x.id+'\')">Associar à ficha existente</button>':duplicateEmail?'':'<button class="btn btn-green" onclick="approvePendingIntake(\''+x.id+'\')">Aprovar e criar cliente</button>')<button class="btn btn-danger" onclick="rejectPendingIntake(\''+x.id+'\')">Rejeitar avaliação</button></div></div>';
+}
+async function attachPendingIntake(id){
+ const x=(S.pendingIntakes||[]).find(z=>z.id===id);
+ if(!x||!confirm('Associar esta avaliação à ficha existente, sem alterar os dados e treinos do cliente?'))return;
+ try{
+  const {error}=await sb.rpc('attach_pending_intake_existing',{p_id:id});
+  if(error)throw error;
+  document.getElementById('pendingReviewOverlay')?.remove();
+  await loadAll();renderDashboard();toast('Avaliação associada à ficha existente!');
+ }catch(e){toast('Não foi possível associar: '+e.message,'err');}
 }
 async function approvePendingIntake(id){
  const x=(S.pendingIntakes||[]).find(z=>z.id===id);if(!x||!confirm('Criar e ativar a ficha de '+x.full_name+'?'))return;
