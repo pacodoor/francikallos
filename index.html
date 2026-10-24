@@ -1178,7 +1178,21 @@ class Q {
   }
   then(res,rej){return this.run().then(res,rej);}
 }
-const sb={from:t=>new Q(t)};
+async function callPTRpc(name,args={}){
+ const endpoint=SURL+'/rest/v1/rpc/'+encodeURIComponent(name);
+ for(let attempt=0;attempt<2;attempt++){
+  try{
+   const response=await fetch(endpoint,{method:'POST',headers:{...SH,'Prefer':'return=representation'},body:JSON.stringify(args)});
+   const raw=await response.text();
+   let data=null;try{data=raw?JSON.parse(raw):null}catch{data=raw}
+   if(response.status===401&&PT_USER&&attempt===0){await refreshPTSession(true);continue;}
+   if(!response.ok)return{data:null,error:{message:(data&&typeof data==='object'&&(data.message||data.hint||data.error))||'HTTP '+response.status}};
+   return{data,error:null};
+  }catch(e){return{data:null,error:{message:e.message||'Erro de ligação'}};}
+ }
+ return{data:null,error:{message:'Sessão expirada. Inicia sessão novamente.'}};
+}
+const sb={from:t=>new Q(t),rpc:callPTRpc};
 async function touchClientAccess(token){
   try{await fetch(SURL+'/rest/v1/rpc/touch_client_access',{method:'POST',headers:{'Content-Type':'application/json','apikey':SKEY,'Authorization':'Bearer '+SKEY},body:JSON.stringify({p_token:token})});}catch(e){}
 }
@@ -4585,12 +4599,12 @@ async function attachPendingIntake(id){
   if(error)throw error;
   document.getElementById('pendingReviewOverlay')?.remove();
   await loadAll();renderDashboard();toast('Avaliação associada à ficha existente!');
- }catch(e){toast('Não foi possível associar: '+e.message,'err');}
+ }catch(e){document.getElementById('pendingReviewOverlay')?.remove();toast('Não foi possível associar: '+e.message,'err');alert('Erro ao associar avaliação: '+e.message);}
 }
 async function approvePendingIntake(id){
  const x=(S.pendingIntakes||[]).find(z=>z.id===id);if(!x||!confirm('Criar e ativar a ficha de '+x.full_name+'?'))return;
  try{const {error}=await sb.rpc('approve_pending_client_intake',{p_id:id});if(error)throw error;document.getElementById('pendingReviewOverlay')?.remove();await loadAll();renderDashboard();toast('Cliente aprovado e ativado!');}
- catch(e){toast('Não foi possível aprovar: '+e.message,'err');}
+ catch(e){document.getElementById('pendingReviewOverlay')?.remove();toast('Não foi possível aprovar: '+e.message,'err');alert('Erro ao aprovar avaliação: '+e.message);}
 }
 async function rejectPendingIntake(id){
  if(!confirm('Rejeitar esta avaliação? A resposta ficará guardada no histórico.'))return;
