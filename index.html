@@ -4543,6 +4543,9 @@ function clientComplete(wId){
   modal.querySelectorAll('.active').forEach(x=>x.classList.remove('active'));
   const comment=modal.querySelector('#feedbackComment');if(comment){comment.value='';comment.placeholder='Ex.: hoje senti dificuldade nos Pull Ups...';}
   const commentLabel=modal.querySelector('#feedbackCommentLabel');if(commentLabel)commentLabel.textContent='Comentário · opcional';
+  // O modal é reutilizado entre treinos: repor o botão após uma conclusão anterior.
+  const feedbackSaveBtn=modal.querySelector('#feedbackSaveBtn');
+  if(feedbackSaveBtn){feedbackSaveBtn.disabled=false;feedbackSaveBtn.textContent='✓ Concluir treino';}
   modal.classList.add('open');
 }
 function closeWorkoutFeedback(){document.getElementById('feedbackModal')?.classList.remove('open');_feedbackWorkoutId=null;}
