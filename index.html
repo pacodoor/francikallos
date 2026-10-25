@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- v=20261005-v2.6.5-feedback-followup-alerts-dashboard-clean -->
+<!-- v=20261025-v2.6.6-feedback-triage-mobile-save-title -->
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Francisco Pinto · Personal Trainer · Biblioteca 2.2.2</title>
+<title>Francisco Pinto - Personal Trainer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -84,6 +84,8 @@ input,select,textarea{font-family:var(--fb)}
 .feedback-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:7px}
 .feedback-chip{font-size:10px;font-weight:800;padding:3px 8px;border-radius:20px;background:var(--s3);color:var(--text)}
 .feedback-chip.alert{color:var(--red);background:rgba(245,74,74,.1)}
+.feedback-chip.movement{color:#f5a04a;background:rgba(245,160,74,.12)}
+.feedback-summary.movement{background:rgba(245,160,74,.045);border-top-color:rgba(245,160,74,.2)}
 .score-context{display:flex;gap:7px;flex-wrap:wrap;margin:5px 0 8px}
 .score-context span{font-size:10px;color:var(--muted);background:var(--s3);border-radius:6px;padding:4px 7px}
 .score-context strong{color:var(--accent)}
@@ -495,6 +497,11 @@ input,select,textarea{font-family:var(--fb)}
 .dashboard-empty{font-size:11px;color:var(--muted);padding:12px 0}
 .dashboard-alert-dot{width:8px;height:8px;border-radius:50%;background:var(--yellow);flex:0 0 8px}
 .dashboard-good-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex:0 0 8px}
+.dashboard-attention-item{align-items:flex-start;flex-wrap:wrap;gap:9px}
+.dashboard-attention-item .dashboard-item-main{flex:1 1 220px}
+.dashboard-attention-item .dashboard-item-title,.dashboard-attention-item .dashboard-item-sub{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.45}
+.dashboard-attention-actions{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;margin-left:auto}
+@media(max-width:520px){.dashboard-attention-item .dashboard-attention-actions{width:100%;justify-content:flex-start;margin-left:17px}}
 .dashboard-quick-actions{display:flex;gap:7px;flex-wrap:wrap}
 @media(max-width:700px){
   .dashboard-kpis{grid-template-columns:1fr 1fr}
@@ -1497,7 +1504,7 @@ async function loadAll(){
   updateNewBadge(unseenCompletions(S.completions));
   document.getElementById('st-clients').textContent=S.clients.filter(isActiveClient).length;
   document.getElementById('st-workouts').textContent=S.workouts.length;
-  document.getElementById('st-videos').textContent=S.videos.length;
+  const videosStat=document.getElementById('st-videos');if(videosStat)videosStat.textContent=S.videos.length;
   const stNew=document.getElementById('st-new-completions');if(stNew)stNew.textContent=_newCount;
   renderNewCompletionsPanel();
 }
@@ -1702,17 +1709,17 @@ function renderDashboardWorkspace(){
   const done7=S.completions.filter(c=>completionTime(c)>=weekAgo);
 
   // Feedback com desconforto/dor tem prioridade máxima até o PT o marcar como acompanhado.
-  const discomfortAlerts=S.completions.filter(c=>c.discomfort===true&&!c.feedback_followed_up_at).map(comp=>{
+  const feedbackAlerts=S.completions.filter(c=>(c.discomfort===true||c.movement_difficulty===true)&&!c.feedback_followed_up_at).map(comp=>{
     const d=completionDetails(comp);
     const workout=d.workout;
     const client=workout?S.clients.find(x=>x.id===workout.client_id):null;
     if(!workout||!client||!isActiveClient(client))return null;
-    return {type:'discomfort',client,workout,completion:comp};
-  }).filter(Boolean).sort((a,b)=>completionTime(b.completion)-completionTime(a.completion));
+    return {type:comp.discomfort===true?'discomfort':'movement',client,workout,completion:comp};
+  }).filter(Boolean).sort((a,b)=>((a.type==='discomfort'?0:1)-(b.type==='discomfort'?0:1))||completionTime(b.completion)-completionTime(a.completion));
 
-  const clientsWithDiscomfort=new Set(discomfortAlerts.map(x=>x.client.id));
+  const clientsWithFeedback=new Set(feedbackAlerts.map(x=>x.client.id));
   const staleAlerts=activeClients.map(c=>{
-    if(clientsWithDiscomfort.has(c.id))return null; // evitar dois alertas simultâneos para o mesmo cliente
+    if(clientsWithFeedback.has(c.id))return null; // evitar dois alertas simultâneos para o mesmo cliente
     const clientSent=sent.filter(w=>w.client_id===c.id);
     if(!clientSent.length)return null;
     const seen=dashboardDate(c.last_seen_at);
@@ -1724,7 +1731,7 @@ function renderDashboardWorkspace(){
     const at=a.seen?a.seen.getTime():0,bt=b.seen?b.seen.getTime():0;
     return at-bt;
   });
-  const attention=[...discomfortAlerts,...staleAlerts];
+  const attention=[...feedbackAlerts,...staleAlerts];
 
   const setText=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
   setText('dash-sent',sent.length);
@@ -1742,20 +1749,24 @@ function renderDashboardWorkspace(){
   const attEl=document.getElementById('dashboardAttentionList');
   if(attEl){
     if(!attention.length){
-      attEl.innerHTML='<div class="dashboard-empty"><span style="color:var(--green);font-weight:700">Tudo acompanhado.</span> Não existem alertas de desconforto pendentes nem clientes com treino enviado sem acesso há mais de 7 dias.</div>';
+      attEl.innerHTML='<div class="dashboard-empty"><span style="color:var(--green);font-weight:700">Tudo acompanhado.</span> Não existem alertas de feedback pendentes nem clientes com treino enviado sem acesso há mais de 7 dias.</div>';
     }else{
       attEl.innerHTML=attention.slice(0,8).map(x=>{
-        if(x.type==='discomfort'){
+        if(x.type==='discomfort'||x.type==='movement'){
+          const pain=x.type==='discomfort';
+          const color=pain?'var(--red)':'#f5a04a';
+          const tint=pain?'rgba(245,74,74,.045)':'rgba(245,160,74,.055)';
+          const border=pain?'rgba(245,74,74,.28)':'rgba(245,160,74,.3)';
           const comment=String(x.completion.feedback_comment||'').trim();
           const effort=x.completion.effort?` · Esforço ${x.completion.effort}/10`:'';
-          return `<div class="dashboard-item" style="border-color:rgba(245,74,74,.28);background:rgba(245,74,74,.045)">
-            <span class="dashboard-alert-dot" style="background:var(--red);box-shadow:0 0 0 4px rgba(245,74,74,.10)"></span>
+          return `<div class="dashboard-item dashboard-attention-item" style="border-color:${border};background:${tint}">
+            <span class="dashboard-alert-dot" style="background:${color}"></span>
             <div class="dashboard-item-main">
-              <div class="dashboard-item-title">⚠ ${escapeHtml(x.client.name)} · desconforto reportado</div>
+              <div class="dashboard-item-title">${pain?'🔴':'🟠'} ${escapeHtml(x.client.name)} · ${pain?'Dor / desconforto':'Dificuldade no movimento'}</div>
               <div class="dashboard-item-sub">${escapeHtml(x.workout.title||'Treino')}${effort}${comment?' · '+escapeHtml(comment):''}</div>
             </div>
-            <div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end">
-              <button class="btn btn-danger btn-xs" type="button" onclick="dashboardOpenWorkout('${x.workout.id}')">Ver treino</button>
+            <div class="dashboard-attention-actions">
+              <button class="btn btn-ghost btn-xs" type="button" onclick="dashboardOpenWorkout('${x.workout.id}')">Ver treino</button>
               <button class="btn btn-green btn-xs" type="button" onclick="acknowledgeFeedback('${x.completion.id}')">✓ Acompanhado</button>
             </div>
           </div>`;
@@ -2372,9 +2383,10 @@ function workoutFeedbackHtml(comp,clientMode=false){
   const chips=[];
   if(comp.difficulty)chips.push(`<span class="feedback-chip">${feedbackDifficultyLabel(comp.difficulty)}</span>`);
   if(comp.effort)chips.push(`<span class="feedback-chip">Esforço ${comp.effort}/10</span>`);
-  if(comp.discomfort===true)chips.push(`<span class="feedback-chip alert">⚠ Desconforto/dor</span>`);
+  if(comp.discomfort===true)chips.push(`<span class="feedback-chip alert">🔴 Dor / desconforto</span>`);
+  else if(comp.movement_difficulty===true)chips.push(`<span class="feedback-chip movement">🟠 Dificuldade no movimento</span>`);
   else if(comp.discomfort===false)chips.push(`<span class="feedback-chip">Sem desconforto</span>`);
-  return `<div class="feedback-summary ${comp.discomfort===true?'alert':''}">
+  return `<div class="feedback-summary ${comp.discomfort===true?'alert':comp.movement_difficulty===true?'movement':''}">
     <div class="feedback-title">${clientMode?'O teu feedback':'Feedback do treino'}</div>
     <div class="feedback-chips">${chips.join('')}</div>
     ${comp.feedback_comment?`<div style="font-size:12px;color:var(--text);line-height:1.5">💬 ${escapeProgressText(comp.feedback_comment)}</div>`:''}
@@ -4517,31 +4529,44 @@ function clientComplete(wId){
           <button type="button" class="feedback-choice" data-difficulty="hard" onclick="pickFeedbackDifficulty('hard',this)">🥵<br>Difícil</button>
         </div></div>
         <div class="form-group"><label class="form-label">Esforço geral · 1 a 10</label><div class="feedback-effort">${Array.from({length:10},(_,i)=>`<button type="button" onclick="pickFeedbackEffort(${i+1},this)">${i+1}</button>`).join('')}</div></div>
-        <div class="form-group"><label class="form-label">Sentiste algum desconforto ou dor?</label><div style="display:flex;gap:8px">
-          <button type="button" class="feedback-choice" style="flex:1" onclick="pickFeedbackDiscomfort(false,this)">Não</button>
-          <button type="button" class="feedback-choice" style="flex:1" onclick="pickFeedbackDiscomfort(true,this)">Sim</button>
+        <div class="form-group"><label class="form-label">Houve alguma dificuldade ou desconforto?</label><div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" class="feedback-choice" style="flex:1 1 100px" onclick="pickFeedbackDiscomfort('none',this)">✓ Não</button>
+          <button type="button" class="feedback-choice" style="flex:1 1 150px;color:#f5a04a" onclick="pickFeedbackDiscomfort('movement',this)">🟠 Dificuldade no movimento</button>
+          <button type="button" class="feedback-choice" style="flex:1 1 150px;color:var(--red)" onclick="pickFeedbackDiscomfort('pain',this)">🔴 Dor / desconforto</button>
         </div></div>
-        <div class="form-group" style="margin-bottom:0"><label class="form-label">Comentário · opcional</label><textarea id="feedbackComment" class="form-input" rows="3" maxlength="500" placeholder="Ex.: hoje senti dificuldade nos Pull Ups..."></textarea></div>
+        <div class="form-group" style="margin-bottom:0"><label id="feedbackCommentLabel" class="form-label">Comentário · opcional</label><textarea id="feedbackComment" class="form-input" rows="3" maxlength="500" placeholder="Ex.: hoje senti dificuldade nos Pull Ups..."></textarea></div>
       </div>
       <div class="modal-foot"><button class="btn btn-ghost" onclick="closeWorkoutFeedback()">Cancelar</button><button id="feedbackSaveBtn" class="btn btn-accent" onclick="confirmClientComplete()">✓ Concluir treino</button></div>
     </div>`;
     document.body.appendChild(modal);
   }
   modal.querySelectorAll('.active').forEach(x=>x.classList.remove('active'));
-  const comment=modal.querySelector('#feedbackComment');if(comment)comment.value='';
+  const comment=modal.querySelector('#feedbackComment');if(comment){comment.value='';comment.placeholder='Ex.: hoje senti dificuldade nos Pull Ups...';}
+  const commentLabel=modal.querySelector('#feedbackCommentLabel');if(commentLabel)commentLabel.textContent='Comentário · opcional';
+  // O modal é reutilizado entre treinos: repor o botão após uma conclusão anterior.
+  const feedbackSaveBtn=modal.querySelector('#feedbackSaveBtn');
+  if(feedbackSaveBtn){feedbackSaveBtn.disabled=false;feedbackSaveBtn.textContent='✓ Concluir treino';}
   modal.classList.add('open');
 }
 function closeWorkoutFeedback(){document.getElementById('feedbackModal')?.classList.remove('open');_feedbackWorkoutId=null;}
 function pickFeedbackDifficulty(v,el){_feedbackDifficulty=v;el.parentNode.querySelectorAll('.feedback-choice').forEach(x=>x.classList.remove('active'));el.classList.add('active');}
 function pickFeedbackEffort(v,el){_feedbackEffort=v;el.parentNode.querySelectorAll('button').forEach(x=>x.classList.remove('active'));el.classList.add('active');}
-function pickFeedbackDiscomfort(v,el){_feedbackDiscomfort=v;el.parentNode.querySelectorAll('.feedback-choice').forEach(x=>x.classList.remove('active'));el.classList.add('active');}
+function pickFeedbackDiscomfort(v,el){
+  _feedbackDiscomfort=v;
+  el.parentNode.querySelectorAll('.feedback-choice').forEach(x=>x.classList.remove('active'));
+  el.classList.add('active');
+  const label=document.getElementById('feedbackCommentLabel');
+  const comment=document.getElementById('feedbackComment');
+  if(label)label.textContent=v==='movement'?'Em que movimento tiveste dificuldade? · opcional':v==='pain'?'Onde sentiste dor ou desconforto? · opcional':'Comentário · opcional';
+  if(comment)comment.placeholder=v==='movement'?'Ex.: Burpees e Push-Ups, falta de força nos braços':v==='pain'?'Ex.: dor no ombro direito durante o movimento':'Queres acrescentar alguma observação?';
+}
 
 async function confirmClientComplete(){
   const wId=_feedbackWorkoutId;
   if(!wId)return;
   if(!_feedbackDifficulty){toast('Escolhe como sentiste a dificuldade do treino.','err');return;}
   if(!_feedbackEffort){toast('Indica o esforço geral de 1 a 10.','err');return;}
-  if(_feedbackDiscomfort===null){toast('Indica se sentiste desconforto ou dor.','err');return;}
+  if(_feedbackDiscomfort===null){toast('Indica se houve dificuldade ou desconforto.','err');return;}
   const btn=document.getElementById('cbtn-'+wId);
   const circ=document.getElementById('dcirc-'+wId);
   const saveBtn=document.getElementById('feedbackSaveBtn');
@@ -4552,7 +4577,8 @@ async function confirmClientComplete(){
     workout_id:wId,
     difficulty:_feedbackDifficulty,
     effort:_feedbackEffort,
-    discomfort:_feedbackDiscomfort,
+    discomfort:_feedbackDiscomfort==='pain',
+    movement_difficulty:_feedbackDiscomfort==='movement',
     feedback_comment:(document.getElementById('feedbackComment')?.value||'').trim()||null
   };
   try{
@@ -4584,7 +4610,7 @@ async function confirmClientComplete(){
     const pct=window._cvTotal?Math.round((window._cvDone/window._cvTotal)*100):0;
     const fill=document.getElementById('cvProgFill');if(fill)fill.style.width=pct+'%';
     const label=document.getElementById('cvProgLabel');if(label)label.textContent=window._cvDone+'/'+window._cvTotal+' treinos concluídos';
-    toast(_feedbackDiscomfort?'Treino concluído. O teu PT verá o alerta de desconforto.':'Excelente! Treino concluído ✓');
+    toast(_feedbackDiscomfort==='pain'?'Treino concluído. O teu PT verá o alerta de desconforto.':_feedbackDiscomfort==='movement'?'Treino concluído. O teu PT verá a dificuldade reportada.':'Excelente! Treino concluído ✓');
     const params=new URLSearchParams(location.search);
     await showClientView(params.get('t'));
   }catch(e){
