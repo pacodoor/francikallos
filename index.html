@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v=20261025-v2.6.6-feedback-triage-mobile-save-title -->
+<!-- v=20261105-v2.6.7-dashboard-direct-workout -->
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
@@ -1393,7 +1393,7 @@ function renderNewCompletionsPanel(){
     const d=completionDetails(c);
     const dt=c.completed_at?new Date(c.completed_at).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
     const cid=d.client?d.client.id:'';
-    return '<div class="new-completion-item"><div><div class="new-completion-main">'+escapeHtml(d.clientName)+'</div><div class="new-completion-sub">'+escapeHtml(d.workoutTitle)+' · '+dt+'</div></div><button class="btn btn-green btn-xs" type="button" onclick="selectClient(\''+cid+'\')">Ver</button></div>';
+    return '<div class="new-completion-item"><div><div class="new-completion-main">'+escapeHtml(d.clientName)+'</div><div class="new-completion-sub">'+escapeHtml(d.workoutTitle)+' · '+dt+'</div></div><button class="btn btn-green btn-xs" type="button" onclick="dashboardOpenWorkout(\''+(d.workout?d.workout.id:'')+'\')">Ver</button></div>';
   }).join('')+'</div>';
 }
 function renderDashboardBadges(){
@@ -1673,17 +1673,30 @@ function dashboardRelative(value){
 
 function dashboardOpenWorkout(workoutId){
   const w=S.workouts.find(x=>x.id===workoutId);
-  if(!w)return;
+  if(!w){toast('Treino não encontrado.','err');return;}
   selectClient(w.client_id);
-  setTimeout(()=>{
+  // Expandir os grupos de ano/mês antes de mostrar um treino concluído.
+  requestAnimationFrame(()=>{
     const body=document.getElementById('wb-'+workoutId);
-    if(body&&!body.classList.contains('open')){
-      const head=body.previousElementSibling;
-      if(head)head.click();
+    const card=document.getElementById('wcard-'+workoutId);
+    if(!body||!card){toast('Não foi possível localizar o treino.','err');return;}
+    const groups=[];
+    for(let p=card.parentElement;p;p=p.parentElement){
+      if(p.id&&p.id.startsWith('grp-'))groups.unshift(p);
+      if(p.id==='workoutsList')break;
     }
-    const card=body?body.closest('.workout-card'):null;
-    if(card)card.scrollIntoView({behavior:'smooth',block:'center'});
-  },80);
+    groups.forEach(group=>{
+      group.style.display='block';
+      const chev=document.getElementById('chev-'+group.id.slice(4));
+      if(chev)chev.style.transform='rotate(180deg)';
+    });
+    if(!body.classList.contains('open')){
+      body.classList.add('open');
+      const chev=body.previousElementSibling?.querySelector('.chevron');
+      if(chev)chev.classList.add('open');
+    }
+    requestAnimationFrame(()=>card.scrollIntoView({behavior:'smooth',block:'start'}));
+  });
 }
 
 function scrollDashboardClients(){
