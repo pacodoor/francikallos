@@ -1288,6 +1288,7 @@ async function initAdminApp(){
   const dash=document.querySelector('[data-page="dashboard"]');if(dash)dash.classList.add('active');
   setupNav();
   await loadAll();
+  await refreshCloudWorkoutTemplates();
   renderDashboard();
   requestNotifPermission();
   startPolling();
@@ -3048,26 +3049,35 @@ async function duplicateWorkout(id){
 const WORKOUT_TEMPLATES_KEY='calipt_workout_templates_v1';
 const WORKOUT_TEMPLATE_FAV_KEY='calipt_workout_template_favorites_v1';
 let templateFavoriteFilter=false;
-
-function loadWorkoutTemplates(){
-  try{
-    const rows=JSON.parse(localStorage.getItem(WORKOUT_TEMPLATES_KEY)||'[]');
-    return Array.isArray(rows)?rows:[];
-  }catch(e){return [];}
+let cloudWorkoutTemplates=[],cloudTemplatesReady=false;
+async function refreshCloudWorkoutTemplates(){
+ const {data,error}=await sb.from('workout_templates').select('*').order('updated_at',{ascending:false});
+ if(error){cloudTemplatesReady=false;toast('Erro ao carregar modelos online: '+error.message,'err');return false;}
+ cloudWorkoutTemplates=data||[];cloudTemplatesReady=true;return true;
+}
+async function writeCloudTemplate(payload){
+ const {error}=await sb.from('workout_templates').insert({...payload,owner_id:PT_USER?.id});
+ if(error){toast('Erro ao guardar modelo: '+error.message,'err');return false;}
+ return refreshCloudWorkoutTemplates();
+}
+async function changeCloudTemplate(id,changes){
+ const {error}=await sb.from('workout_templates').update(changes).eq('id',id);
+ if(error){toast('Erro ao atualizar modelo: '+error.message,'err');return false;}
+ return refreshCloudWorkoutTemplates();
+}
+async function removeCloudTemplate(id){
+ const {error}=await sb.from('workout_templates').delete().eq('id',id);
+ if(error){toast('Erro ao eliminar modelo: '+error.message,'err');return false;}
+ return refreshCloudWorkoutTemplates();
 }
 
-function storeWorkoutTemplates(rows){
-  localStorage.setItem(WORKOUT_TEMPLATES_KEY,JSON.stringify(rows));
-}
+function loadWorkoutTemplates(){return cloudWorkoutTemplates;}
 
-function loadTemplateFavorites(){
-  try{return new Set(JSON.parse(localStorage.getItem(WORKOUT_TEMPLATE_FAV_KEY)||'[]'));}catch(e){return new Set();}
-}
-function storeTemplateFavorites(set){localStorage.setItem(WORKOUT_TEMPLATE_FAV_KEY,JSON.stringify([...set]));}
+function loadTemplateFavorites(){return new Set(cloudWorkoutTemplates.filter(t=>t.is_favorite).map(t=>t.id));}
 function isTemplateFavorite(id){return loadTemplateFavorites().has(id);}
-function toggleWorkoutTemplateFavorite(id){
-  const fav=loadTemplateFavorites();
-  fav.has(id)?fav.delete(id):fav.add(id);storeTemplateFavorites(fav);renderWorkoutTemplates();
+async function toggleWorkoutTemplateFavorite(id){
+ const t=cloudWorkoutTemplates.find(x=>x.id===id);if(!t)return;
+ if(await changeCloudTemplate(id,{is_favorite:!t.is_favorite,updated_at:new Date().toISOString()}))renderWorkoutTemplates();
 }
 function toggleTemplateFavoriteFilter(){templateFavoriteFilter=!templateFavoriteFilter;renderWorkoutTemplates();}
 function normalizeTemplateSearch(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();}
@@ -3078,7 +3088,7 @@ function templateSearchText(t){
   ].join(' '));
 }
 
-function saveWorkoutAsTemplate(id){
+async function saveWorkoutAsTemplate(id){
   const w=S.workouts.find(x=>x.id===id);
   if(!w){toast('Treino não encontrado','err');return;}
   const suggested=w.title||'Modelo de treino';
@@ -3093,18 +3103,13 @@ function saveWorkoutAsTemplate(id){
       timer_work:b.timer_work||'',timer_rest:b.timer_rest||'',timer_rounds:b.timer_rounds||'',
       has_score:!!b.has_score,score_label:b.score_label||'',sort_order:i
     }));
-  const templates=loadWorkoutTemplates();
-  templates.unshift({
-    id:'tpl_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),name:name.trim(),
-    day:w.day||'',week:w.week||'',duration:w.duration||null,notes:w.notes||'',blocks,
-    created_at:new Date().toISOString(),updated_at:new Date().toISOString()
-  });
-  storeWorkoutTemplates(templates);
-  toast('Modelo guardado!');
+  if(!cloudTemplatesReady){toast('Modelos online indisponíveis','err');return;}
+  if(await writeCloudTemplate({name:name.trim(),day:w.day||'',week:w.week||'',duration:w.duration==null?null:String(w.duration),notes:w.notes||'',blocks}))toast('Modelo guardado online!');
 }
 
-function openWorkoutTemplates(){
+async function openWorkoutTemplates(){
   if(!S.currentClientId){toast('Seleciona um cliente primeiro','err');return;}
+  if(!await refreshCloudWorkoutTemplates())return;
   templateFavoriteFilter=false;
   const q=document.getElementById('workoutTemplateSearch');if(q)q.value='';
   renderWorkoutTemplates();
@@ -3154,31 +3159,30 @@ function renderWorkoutTemplates(){
   }).join('')+'</div>';
 }
 
-function renameWorkoutTemplate(id){
-  const templates=loadWorkoutTemplates();const t=templates.find(x=>x.id===id);if(!t)return;
-  const name=prompt('Novo nome do modelo:',t.name||'');if(name===null)return;
-  if(!name.trim()){toast('Indica um nome para o modelo','err');return;}
-  t.name=name.trim();t.updated_at=new Date().toISOString();storeWorkoutTemplates(templates);renderWorkoutTemplates();toast('Modelo renomeado');
+async function renameWorkoutTemplate(id){
+ const t=loadWorkoutTemplates().find(x=>x.id===id);if(!t)return;
+ const name=prompt('Novo nome do modelo:',t.name||'');if(name===null)return;
+ if(!name.trim()){toast('Indica um nome para o modelo','err');return;}
+ if(await changeCloudTemplate(id,{name:name.trim(),updated_at:new Date().toISOString()})){renderWorkoutTemplates();toast('Modelo renomeado');}
 }
 
-function duplicateWorkoutTemplateLocal(id){
-  const templates=loadWorkoutTemplates();const t=templates.find(x=>x.id===id);if(!t)return;
-  const copy=JSON.parse(JSON.stringify(t));copy.id='tpl_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);copy.name=(t.name||'Modelo')+' (cópia)';copy.created_at=new Date().toISOString();copy.updated_at=copy.created_at;
-  templates.unshift(copy);storeWorkoutTemplates(templates);renderWorkoutTemplates();toast('Modelo duplicado');
+async function duplicateWorkoutTemplateLocal(id){
+ const t=loadWorkoutTemplates().find(x=>x.id===id);if(!t)return;
+ const {id:oldId,owner_id,legacy_id,created_at,updated_at,...copy}=t;
+ copy.name=(t.name||'Modelo')+' (cópia)';copy.is_favorite=false;
+ if(await writeCloudTemplate(copy)){renderWorkoutTemplates();toast('Modelo duplicado');}
 }
 
-function deleteWorkoutTemplate(id){
-  const template=loadWorkoutTemplates().find(t=>t.id===id);
-  if(!template||!confirm('Eliminar o modelo "'+template.name+'"?'))return;
-  storeWorkoutTemplates(loadWorkoutTemplates().filter(t=>t.id!==id));
-  const fav=loadTemplateFavorites();fav.delete(id);storeTemplateFavorites(fav);
-  renderWorkoutTemplates();toast('Modelo eliminado');
+async function deleteWorkoutTemplate(id){
+ const t=loadWorkoutTemplates().find(x=>x.id===id);
+ if(!t||!confirm('Eliminar o modelo "'+t.name+'"?'))return;
+ if(await removeCloudTemplate(id)){renderWorkoutTemplates();toast('Modelo eliminado');}
 }
 
-function applyWorkoutTemplate(id){
+async function applyWorkoutTemplate(id){
   const t=loadWorkoutTemplates().find(x=>x.id===id);
   if(!t){toast('Modelo não encontrado','err');return;}
-  const templates=loadWorkoutTemplates();const src=templates.find(x=>x.id===id);if(src){src.updated_at=new Date().toISOString();storeWorkoutTemplates(templates);}
+  // A aplicação não altera o modelo original.
   document.getElementById('wId').value='';
   document.getElementById('wTitle').value=t.name||'';
   document.getElementById('wDay').value=t.day||'Segunda';
