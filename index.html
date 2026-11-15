@@ -2235,6 +2235,17 @@ function scoreBlockDisplayLabel(block,fallbackLabel='Score',workout=null){
   return name||label||'Score';
 }
 
+function canonicalProgressLabel(label,unit){
+  // Unificar apenas variantes inequívocas de corrida de 5 km; nunca agrupar "Run" sem distância.
+  const raw=String(label||'').trim();
+  const subject=raw.split(/\s+[—–-]\s+/)[0].normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+  if(unit==='tempo' && /^(?:run\s*5\s*k(?:m)?|5\s*k(?:m)?\s*run)$/.test(subject))return '5k Run — Time';
+  return raw;
+}
+function progressScoreLabel(score,unit,clientMode=false){
+  return canonicalProgressLabel(clientMode?clientScoreLabel(score):scoreSeriesKey(score),unit);
+}
+
 function scoreSeriesKey(score){
   if(score.block_id){
     const block=S.blocks.find(b=>b.id===score.block_id);
@@ -2424,7 +2435,7 @@ async function showClientProgress(){
   const groups={};
   allScores.forEach(score=>{
     const metric=scoreMetric(score);if(!metric)return;
-    const key=scoreSeriesKey(score);
+    const key=progressScoreLabel(score,metric.unit);
     const groupKey=key+'|'+metric.unit;
     (groups[groupKey]||(groups[groupKey]={label:key,unit:metric.unit,points:[]})).points.push({score,metric});
   });
@@ -4112,7 +4123,7 @@ function renderClientProgress(client,workouts,completions,scores){
   const groups={};
   allScores.forEach(score=>{
     const metric=scoreMetric(score);if(!metric)return;
-    const label=clientScoreLabel(score),key=label+'|'+metric.unit;
+    const label=progressScoreLabel(score,metric.unit,true),key=label+'|'+metric.unit;
     (groups[key]||(groups[key]={label,unit:metric.unit,points:[]})).points.push({score,metric});
   });
   const series=Object.values(groups).filter(g=>g.points.length>=2).sort((a,b)=>new Date(b.points.at(-1).score.recorded_at)-new Date(a.points.at(-1).score.recorded_at));
