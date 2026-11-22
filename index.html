@@ -1451,7 +1451,7 @@ function renderBlockDemos(content){
       const args=e.gif_url
         ? `'${jsStr(url)}','${jsStr(e.name)}','${jsStr(e.instructions)}',event`
         : `'${jsStr(url)}','${jsStr(e.name)}','${jsStr(e.instructions)}',null,'video',event`;
-      return `<button class="block-demo-btn" type="button" onclick="${action}(${args});return false"><span class="block-demo-icon">▶</span><span>${label}: ${escapeHtml(e.name)}</span></button>`;
+      return `<button class="block-demo-btn" type="button" onclick="${escapeHtml(action+'('+args+');return false')}"><span class="block-demo-icon">▶</span><span>${label}: ${escapeHtml(e.name)}</span></button>`;
     }).join('')}</div>
   </div>`;
 }
