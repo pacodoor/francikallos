@@ -3609,7 +3609,7 @@ function renderLibrary(){
     </div>
     <div class="exercise-meta">${escapeHtml(e.primary_muscles.join(', ')||'Sem músculos definidos')}</div>
     ${e.gif_url?`<img class="exercise-gif" src="${escapeHtml(normalizeMediaUrl(e.gif_url))}" alt="${escapeHtml(e.name)}" loading="lazy" onerror="this.style.display='none'">`:''}
-    <div class="exercise-media-actions">${e.gif_url?`<button class="btn btn-library btn-xs" type="button" onclick="showGif('${jsStr(e.gif_url)}','${jsStr(e.name)}','${jsStr(e.instructions)}',event);return false">Ver GIF</button>`:''}${e.video_url?`<button class="btn btn-ghost btn-xs" type="button" onclick="playUrl('${jsStr(e.video_url)}','${jsStr(e.name)}','${jsStr(e.instructions)}',null,'video',event);return false">Ver vídeo</button>`:''}</div>
+    <div class="exercise-media-actions">${e.gif_url?`<button class="btn btn-library btn-xs" type="button" onclick="showGif('${escapeHtml(jsStr(e.gif_url))}','${escapeHtml(jsStr(e.name))}','${escapeHtml(jsStr(e.instructions))}',event);return false">Ver GIF</button>`:''}${e.video_url?`<button class="btn btn-ghost btn-xs" type="button" onclick="playUrl('${escapeHtml(jsStr(e.video_url))}','${escapeHtml(jsStr(e.name))}','${escapeHtml(jsStr(e.instructions))}',null,'video',event);return false">Ver vídeo</button>`:''}</div>
     <div class="exercise-card-actions">
       <button class="btn btn-ghost btn-xs btn-favorite ${isExerciseFavorite(e.id)?'on':''}" type="button" onclick="toggleExerciseFavorite('${e.id}',event)">${isExerciseFavorite(e.id)?'★ Favorito':'☆ Favorito'}</button>
       <button class="btn btn-ghost btn-xs" type="button" onclick="editExercise('${e.id}')">Editar</button>
