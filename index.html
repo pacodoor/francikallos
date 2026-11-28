@@ -1716,7 +1716,7 @@ async function acknowledgeFeedback(completionId){
 }
 
 // Contacto manual de acompanhamento: não envia mensagens automaticamente.
-function dashboardWhatsApp(clientId){
+function dashboardWhatsApp(clientId,completionId=null){
   const client=S.clients.find(c=>String(c.id)===String(clientId));
   if(!client){toast('Cliente não encontrado.','err');return;}
   const raw=String(client.phone||'').trim();
@@ -1727,7 +1727,24 @@ function dashboardWhatsApp(clientId){
   else if(/^9\d{8}$/.test(compact))phone='351'+compact; // telemóvel português
   else if(/^3519\d{8}$/.test(compact))phone=compact;
   if(!phone){toast('Este cliente não tem um número de WhatsApp válido na ficha. Confirma o número e o indicativo.','err');return;}
-  const msg='Olá! 😊 Tudo bem contigo?\n\nEstou a passar para saber como estão a correr os treinos. 💪\n\nTens alguma dúvida ou dificuldade com os exercícios ou com a aplicação?\n\nSe precisares de alguma coisa, estou por aqui para ajudar!\n\nBora lá! 💪';
+  let msg='Olá! 😊 Tudo bem contigo?\n\nEstou a passar para saber como estão a correr os treinos. 💪\n\nTens alguma dúvida ou dificuldade com os exercícios ou com a aplicação?\n\nSe precisares de alguma coisa, estou por aqui para ajudar!\n\nBora lá! 💪';
+
+  const name=String(client.name||'').trim().split(/\s+/)[0];
+  const greeting=name?'Olá, '+name+'! 😊':'Olá! 😊';
+  if(completionId){
+    const comp=S.completions.find(c=>String(c.id)===String(completionId));
+    const workout=comp&&S.workouts.find(w=>String(w.id)===String(comp.workout_id)&&String(w.client_id)===String(clientId));
+    if(!comp||!workout){toast('Não foi possível identificar o feedback.','err');return;}
+    const title=String(workout.title||'').trim();
+    const context=title?'no feedback do treino «'+title+'»':'no feedback do teu treino';
+    if(comp.discomfort===true){
+      msg=greeting+'\n\nVi '+context+' que sentiste dor ou desconforto. Como te estás a sentir agora?\n\nPodes dizer-me onde sentiste o desconforto, em que exercício aconteceu e se ainda o sentes?\n\nEvita repetir movimentos que provoquem dor até percebermos melhor a situação. Quero ajudar-te a ajustar o treino, se necessário. 💪';
+    }else if(comp.movement_difficulty===true){
+      msg=greeting+'\n\nVi '+context+' que tiveste dificuldade na execução de algum movimento.\n\nPodes dizer-me qual foi o exercício e o que sentiste mais dificuldade em fazer? Assim consigo ajudar-te a melhorar a execução ou adaptar o exercício ao teu nível.\n\nSiga, tu consegues! 💪';
+    }
+  }else{
+    msg=greeting+'\n\nEstá tudo bem contigo? Reparei que já passou algum tempo desde a tua última atividade na APP.\n\nTens tido alguma dificuldade com os treinos ou com a utilização da APP? Se precisares de ajuda ou de ajustar alguma coisa, diz-me.\n\nBora lá! 💪';
+  }
   window.open('https://wa.me/'+phone+'?text='+encodeURIComponent(msg),'_blank','noopener,noreferrer');
 }
 
@@ -1797,7 +1814,7 @@ function renderDashboardWorkspace(){
             </div>
             <div class="dashboard-attention-actions">
               <button class="btn btn-ghost btn-xs" type="button" onclick="dashboardOpenWorkout('${x.workout.id}')">Ver treino</button>
-              <button class="btn btn-green btn-xs" type="button" onclick="dashboardWhatsApp('${x.client.id}')">WhatsApp</button>
+              <button class="btn btn-green btn-xs" type="button" onclick="dashboardWhatsApp('${x.client.id}','${x.completion.id}')">WhatsApp</button>
               <button class="btn btn-green btn-xs" type="button" onclick="acknowledgeFeedback('${x.completion.id}')">✓ Acompanhado</button>
             </div>
           </div>`;
